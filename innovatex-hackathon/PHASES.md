@@ -10,176 +10,167 @@ This document defines the **9-phase implementation plan** for the *Diagnóstico 
 
 ---
 
-## Phase 1: Project Setup & Infrastructure
+## Phase 1: Project Setup & Infrastructure 🟢 COMPLETED
 
-**Objective:** Provide a fully containerized, runnable skeleton (backend + frontend + DB + reverse proxy) with OAuth login working end-to-end.
+**Objective:** Provide a fully containerized, runnable skeleton (backend + frontend + DB) with Supabase Auth login working end-to-end.
 
-**Dependencies:** None. This is the foundation.
+**Dependencies:** None.
 
 **Tasks:**
-- Create `docker-compose.yml` with four services: `postgres` (PostgreSQL 16), `backend` (FastAPI), `frontend` (Vite dev/prod), `nginx` (reverse proxy).
-- Create `backend/Dockerfile` (Python 3.12-slim, uvicorn, non-root user).
-- Create `frontend/Dockerfile` (node:20, multi-stage build → nginx static).
-- Create `nginx/nginx.conf` defining `/api/` → backend upstream and `/` → frontend upstream, plus WebSocket-friendly upgrade headers.
-- Initialize FastAPI app in `backend/app/main.py` with lifespan, CORS, and router includes stubbed.
-- Create `backend/app/config.py` using `pydantic-settings` (`Settings` class reading `DATABASE_URL`, `JWT_SECRET`, `JWT_ALG`, `JWT_EXP_MINUTES`, `JWT_REFRESH_EXP_DAYS`, `GOOGLE_CLIENT_ID/SECRET`, `MICROSOFT_CLIENT_ID/SECRET`, `AI_PROVIDER`, `*_AI_API_KEY`).
-- Create `backend/app/database.py` with SQLAlchemy `engine`, `SessionLocal`, `Base` (postgresql+psycopg dialect).
-- Create `backend/requirements.txt` pinning `fastapi`, `uvicorn[standard]`, `sqlalchemy`, `psycopg[binary]`, `alembic`, `pydantic-settings`, `authlib`, `python-jose`, `passlib`, `httpx`, `python-multipart`.
-- Initialize Alembic: `backend/alembic.ini`, `backend/alembic/env.py` (autogenerate import target metadata → `Base.metadata`), empty `backend/alembic/versions/`.
-- Scaffold React + Vite: `frontend/package.json` (react, react-router-dom, axios, zustand, @tanstack/react-query, recharts, tailwind, shadcn/ui deps), `frontend/vite.config.ts` (proxy `/api` → backend), `frontend/tsconfig.json`, `frontend/tailwind.config.ts`, `frontend/index.html`.
-- Initialize shadcn/ui in `frontend/src/components/ui/` (`button`, `input`, `dialog`, `card`, `toast`).
-- Implement OAuth2 flow in `backend/app/routers/auth.py` (`GET /api/auth/login/google`, `GET /api/auth/login/microsoft`, `GET /api/auth/callback/google`, `GET /api/auth/callback/microsoft`) and `backend/app/services/auth_service.py` (exchange code → userinfo → upsert user → issue access + refresh JWT).
-- Create `frontend/src/pages/LoginPage.tsx` with two OAuth buttons (Google, Microsoft) hitting backend login routes.
-- Create `frontend/src/api/client.ts` (axios instance with JWT interceptor + refresh logic).
+- ✅ Create `docker-compose.yml` with backend service (postgres, frontend, nginx removed in Phase 2 Path B).
+- ✅ Create `backend/Dockerfile` (Python 3.12-slim, UV package manager, non-root user).
+- ✅ Create `frontend/Dockerfile` (node:20).
+- ✅ Create `nginx/nginx.conf` (disabled for local dev).
+- ✅ Initialize FastAPI app in `backend/app/main.py` with lifespan, CORS, router includes.
+- ✅ Create `backend/app/config.py` using `pydantic-settings`.
+- ✅ Create `backend/app/database.py` with SQLAlchemy `engine`, `SessionLocal`, `Base`.
+- ✅ Dependencies via `pyproject.toml` + UV (not requirements.txt).
+- ✅ Initialize Alembic: `backend/alembic.ini`, `backend/alembic/env.py`.
+- ✅ Scaffold React + Vite: `frontend/package.json`, `vite.config.ts`, Tailwind, shadcn/ui.
+- ✅ Supabase Auth: email/password login + register (NOT OAuth2 — Path B decision).
+- ✅ Frontend: `LoginPage.tsx`, `RegisterPage.tsx`.
+- ✅ Frontend: `api/client.ts` (Axios + JWT interceptor + refresh logic).
+- ✅ Frontend: `stores/authStore.ts` (Zustand: session, user, init, signOut).
+- ✅ Backend: `dependencies.py` (Supabase JWT verification ES256 via JWKS).
+- ✅ Backend: `routers/auth.py` (`GET /api/auth/me`, `GET /api/auth/verify`).
 
 **Deliverables:**
-- Files: `docker-compose.yml`, `backend/Dockerfile`, `frontend/Dockerfile`, `nginx/nginx.conf`, `backend/app/{main.py,config.py,database.py}`, `backend/requirements.txt`, `backend/alembic/*`, `frontend/package.json`, `frontend/vite.config.ts`, `frontend/tailwind.config.ts`, `frontend/index.html`, `frontend/src/pages/LoginPage.tsx`, `frontend/src/api/client.ts`.
-- Endpoints: 4 auth redirect/callback endpoints.
-- DB tables: none yet (Alembic baseline only).
+- All infrastructure files created.
+- Auth: Supabase email/password working. JWT verification in backend.
+- Frontend skeleton with login/register pages.
 
-**Acceptance Criteria:**
-- `docker-compose up` starts all four services; `http://localhost` renders `LoginPage`.
-- Clicking "Login with Google" redirects to Google, returns with a valid JWT pair stored in frontend.
-- `GET /api/health` returns `{"status":"ok"}` through nginx.
-- `alembic upgrade head` runs without error (empty schema).
-
-**Estimated Effort:** Large
-
-**Key Decisions & Risks:**
-- *Decision:* Use `authlib` instead of writing raw OAuth flows to reduce boilerplate.
-- *Decision:* JWT access + refresh (not session cookies) to keep backend stateless and scalable.
-- *Risk:* OAuth provider approval can take time → keep test-mode user provisioning in `auth_service.py` for local dev.
-- *Risk:* Windows filesystem performance on mounted volumes → document optional named-volume override in `docker-compose.yml`.
+**Key Decisions:**
+- *Auth:* Supabase Auth (email/password + JWT) instead of OAuth2 (Google/Microsoft).
+- *Package manager:* UV instead of pip/requirements.txt.
+- *DB:* PostgreSQL 16 (initially Docker, later migrated to Supabase managed in Phase 2).
 
 ---
 
-## Phase 2: Models + Base API (Users, Companies, Roles, CRUD)
+## Phase 2: Models + Base API (Companies, Onboarding, Roles) 🟢 COMPLETED
 
-**Objective:** Persist the full domain model and expose CRUD APIs with multi-tenant isolation and frontend authentication wiring.
+**Objective:** Persist the full domain model (11 tables) on Supabase managed PostgreSQL, expose Companies CRUD API with tenant isolation, and wire frontend onboarding flow.
 
-**Dependencies:** Phase 1 (DB engine, Alembic, OAuth, frontend scaffold).
+**Dependencies:** Phase 1 (Supabase Auth, FastAPI, Alembic, frontend skeleton).
+
+**Architecture Decision (Path B):** Use Supabase's managed PostgreSQL instead of Docker PostgreSQL. `profiles` table references `auth.users(id)` directly (same database). Backend connects via Supabase pooler (IPv4) for runtime and direct connection for Alembic DDL.
 
 **Tasks:**
-- Create SQLAlchemy models in `backend/app/models/`:
-  - `user.py` (`User`: id, email, name, provider, provider_id, created_at, updated_at)
-  - `company.py` (`Company` + `UserCompanyRole` tenant join with role enum admin/auditor/reader)
-  - `assessment.py` (`Assessment`, `AssessmentAnswer`, `Score`)
-  - `question.py` (`Section`, `Question`)
-  - `recommendation.py` (`Recommendation`, `ShareLink`)
-  - `action_item.py` (`ActionItem`)
-- Create Pydantic schemas in `backend/app/schemas/`: `user.py`, `company.py`, `assessment.py`, `question.py`, `report.py`.
-- Generate + author Alembic migration creating all tables, indexes (`user.email` unique, `share_links.token` unique), and FKs.
-- Implement multi-tenant middleware in `backend/app/middleware/tenant_middleware.py` (resolve `current_company_id` from JWT claim + header) and `backend/app/middleware/auth_middleware.py` (JWT validation, inject `current_user`).
-- Implement routers:
-  - `auth.py`: `POST /api/auth/refresh`, `POST /api/auth/logout`, `GET /api/auth/me`.
-  - `users.py`: `GET /api/users/me`, `PATCH /api/users/me`, `GET /api/users` (admin only, scoped to company).
-  - `companies.py`: `POST /api/companies`, `GET /api/companies`, `GET /api/companies/:id`, `PATCH /api/companies/:id`.
-  - `roles.py` (subset of `companies.py` or separate file): assign/update/delete `UserCompanyRole`.
-- Frontend:
-  - Create `frontend/src/stores/authStore.ts` (zustand: user, tokens, company selection).
-  - Create `frontend/src/api/companies.ts`, `users.ts`.
-  - Build protected route wrapper `frontend/src/components/layout/ProtectedRoute.tsx`.
-  - Build `frontend/src/pages/CompanyProfilePage.tsx`, `CompanySwitchPage.tsx`, `AdminUsersPage.tsx`.
-  - Build layout shell `frontend/src/components/layout/{Header,Sidebar,Layout}.tsx`.
+- ✅ Config: Dual DATABASE_URL (direct for Alembic, pooler for FastAPI). `.env` updated.
+- ✅ `docker-compose.yml`: Removed postgres service. Backend only.
+- ✅ `entrypoint.sh`: alembic upgrade head → seed → uvicorn (idempotent, safe on every start).
+- ✅ SQLAlchemy models (11 tables) in `backend/app/models/`:
+  - `profile.py` (`Profile`: id FK→auth.users, email, full_name, avatar_url)
+  - `block.py` (`Block`: slug TEXT PK, title, weight, order_num) — 3 blocks
+  - `question.py` (`Question`: slug TEXT PK, block_id FK, kind (gate/scale/validation), text, weight, gate_for JSON)
+  - `company.py` (`Company`: name, nit UNIQUE, sector, size, created_by FK→profiles)
+  - `company_member.py` (`CompanyMember`: company_id FK, profile_id FK, role ENUM, UNIQUE(company_id, profile_id))
+  - `assessment.py` (`Assessment`: company_id, created_by, status, overall_score, completed_at NULLABLE)
+  - `assessment_answer.py` (`AssessmentAnswer`: composite PK (assessment_id, question_id), polymorphic answer columns (scale_resp 0/35/70/100, gate_resp BOOLEAN, validation_resp BOOLEAN), CHECK constraints)
+  - `score.py` (`Score`: assessment_id, block_id, score/max_score/percentage NUMERIC, UNIQUE(assessment_id, block_id))
+  - `recommendation.py` (`Recommendation`: assessment_id, block_id, ai_generated_text, priority)
+  - `action_item.py` (`ActionItem`: recommendation_id, assessment_id, title, status, assigned_to)
+  - `share_link.py` (`ShareLink`: assessment_id, token UUID UNIQUE, expires_at, status)
+- ✅ Enums: RoleEnum (admin/auditor/reader), AssessmentStatusEnum (draft/completed), QuestionKindEnum (gate/scale/validation), PriorityEnum, ActionItemStatusEnum, ShareLinkStatusEnum.
+- ✅ Alembic migration: generated + applied to Supabase. All FKs RESTRICT (except profiles→auth.users CASCADE). NUMERIC for scores. NOT NULL on critical columns. updated_at on mutable tables. Indexes on FK columns. Composite UNIQUE constraints.
+- ✅ Seed data: `backend/app/seeds/data.py` + `runner.py` — 3 blocks + 11 questions from Cuestionario_Diagnostico_Privacidad.md. Idempotent INSERT ON CONFLICT DO NOTHING.
+- ✅ Audit fixes applied: ON DELETE RESTRICT throughout, NUMERIC for scores, NOT NULL constraints, composite UNIQUE, FK indexes, updated_at triggers, polymorphic answer columns.
+- ✅ Backend API: `schemas/company.py` (CompanyCreate, CompanyRead), `services/company_service.py` (list, create with lazy profile upsert + admin auto-assign), `routers/companies.py` (GET /api/companies, POST /api/companies, GET /api/companies/{id}).
+- ✅ JWT verification: JWKS fetch with kid matching. Fixed issuer check (removed — Supabase JWT iss includes /auth/v1 path).
+- ✅ Containerized: `docker-compose up --build` starts backend, auto-migrates + seeds + serves.
+- 🔄 Frontend:
+  - ✅ Types updated (`Company`, `CompanyCreate`, removed `mock: true`).
+  - ✅ `api/companies.ts` (list, create, get with field mapping).
+  - ✅ `stores/companyStore.ts` (API-backed, no localStorage mock, auto-select first company).
+  - ✅ `ProtectedRoute.tsx` (API-driven onboarding redirect).
+  - ✅ `OnboardingPage.tsx` (real POST /api/companies, validation error display).
+  - ✅ `DashboardPage.tsx` (company banner with "Empresa actual" label, NIT, sector, size).
+  - ✅ `LoginPage.tsx` + `RegisterPage.tsx` (auto-redirect if already authenticated).
+  - ✅ Axios interceptor: uses authStore session (not async getSession), retries on 401 with fresh token.
 
 **Deliverables:**
-- DB tables: `users`, `companies`, `user_company_roles`, `assessments`, `assessment_answers`, `sections`, `questions`, `scores`, `recommendations`, `action_items`, `share_links`.
-- Endpoints: auth (3), users (3), companies (4), roles (3).
-- Frontend pages: CompanyProfile, CompanySwitch, AdminUsers + global layout.
+- DB tables: 11 (profiles, blocks, questions, companies, company_members, assessments, assessment_answers, scores, recommendations, action_items, share_links).
+- Seed data: 3 blocks + 11 questions from canonical Cuestionario_Diagnostico_Privacidad.md.
+- Endpoints: GET/POST /api/companies, GET /api/companies/{id}.
+- Frontend pages: Login, Register, Onboarding, Dashboard (with company display).
+- Backend containerized: `docker-compose up --build` works end-to-end.
 
 **Acceptance Criteria:**
-- Authenticated request to `/api/users` returns only users from the requester's current company.
-- Creating a second company and switching via `/company/switch` isolates data between tenants.
-- Role enforcement: a `reader` calling `POST /api/companies` is rejected with 403.
-- `alembic upgrade head` produces all 11 tables with correct FKs.
+- ✅ Authenticated GET /api/companies returns user's companies.
+- ✅ POST /api/companies creates company + assigns creator as admin (role=admin in company_members).
+- ✅ Profile auto-created on first API call (lazy upsert from JWT sub + email).
+- ✅ Frontend onboarding creates real company via API → redirects to dashboard showing company name.
+- ✅ alembic upgrade head produces all 11 tables with correct FKs, constraints, indexes.
+- ✅ Login/Register pages auto-redirect to dashboard if already authenticated.
 
-**Estimated Effort:** Large
-
-**Key Decisions & Risks:**
-- *Decision:* Resolve tenant from JWT claim + optional header (not subdomain) for MVP simplicity.
-- *Decision:* Soft cascade deletes (`ON DELETE RESTRICT`) to preserve audit trail.
-- *Risk:* Forgot to scope a query → leak across tenants. Mitigate with a `TenantQuery` SQLAlchemy helper in `database.py` that auto-applies company filter.
+**Key Decisions:**
+- *Canonical questionnaire:* `Cuestionario_Diagnostico_Privacidad.md` (3 blocks, 11 questions, scale 0/35/70/100). PLAN.md data model is superseded.
+- *Profiles:* Lazy-upsert from JWT (no Supabase trigger for MVP — Option B deferred).
+- *Scoring:* P1 gate (No → Bloque 1 = 0%). P2-P10 scale 0/35/70/100. P11 validation (weight 0). Final % = sum of raw points from P2-P10.
+- *Maturity matrix:* 0-39% Crítico, 40-69% Básico, 70-89% Avanzado, 90-100% Optimizado.
 
 ---
 
-## Phase 3: Questionnaire (Sections, Questions, Answers, Auto-save)
+## Phase 3: Questionnaire (Blocks, Questions, Answers, Auto-save) 🔵 STARTING
 
-**Objective:** Allow a user to start an assessment, navigate 10 sections / 43 questions freely, answer them, and have progress auto-saved.
+**Objective:** Allow a user to start an assessment, navigate 3 blocks / 11 questions freely, answer them (gate/scale/validation), and have progress auto-saved.
 
-**Dependencies:** Phase 2 (Assessment + Answer models, tenant isolation).
+**Dependencies:** Phase 2 (Assessment + Answer models, tenant isolation, seed data).
+
+**Model (canonical):** `Cuestionario_Diagnostico_Privacidad.md` — 3 blocks (Política 40%, Privacidad 36%, Gobernanza 24%), 11 questions (P1 gate, P2-P10 scale 0/35/70/100, P11 validation weight 0). Scoring: sum of raw points P2-P10 = final %. Gate: P1=No → Bloque 1 = 0%.
 
 **Tasks:**
-- Seed data: create `backend/app/seeds/questions_seed.py` defining 10 sections and 43 questions exactly per `PLAN.md` (legal references, `ai_explanation_prompt` per question).
-- Routers:
-  - `questions.py`: `GET /api/sections`, `GET /api/sections/:id/questions`, `GET /api/questions/:id`.
-  - `assessments.py`: `POST /api/assessments` (create in_progress), `GET /api/assessments/:id`, `GET /api/assessments`, `PUT /api/assessments/:id` (status → completed), `DELETE /api/assessments/:id`.
-  - `answers.py` (inside assessments router): `POST /api/assessments/:id/answers` (upsert), `GET /api/assessments/:id/answers`.
-- Service layer: `backend/app/services/assessment_service.py` (start/complete, answer upsert with idempotency on (assessment_id, question_id)).
-- Frontend:
+- 🔲 Seed data: already done in Phase 2 (`backend/app/seeds/data.py` — 3 blocks, 11 questions).
+- 🔲 Routers:
+  - `questions.py`: `GET /api/blocks`, `GET /api/blocks/{slug}/questions`, `GET /api/questions/{slug}`.
+  - `assessments.py`: `POST /api/assessments` (create draft), `GET /api/assessments`, `GET /api/assessments/{id}`, `PUT /api/assessments/{id}` (status → completed).
+  - `answers.py` (inside assessments router): `POST /api/assessments/{id}/answers` (upsert), `GET /api/assessments/{id}/answers`.
+- 🔲 Service layer: `backend/app/services/assessment_service.py` (start/complete, answer upsert with idempotency on (assessment_id, question_id) composite PK).
+- 🔲 Frontend:
   - `frontend/src/pages/AssessmentPage.tsx` orchestrating a single assessment.
-  - `frontend/src/components/assessment/SectionNav.tsx` (sidebar of 10 sections with per-section completion dot).
-  - `frontend/src/components/assessment/QuestionCard.tsx` (Sí / No / Parcial / N/A buttons + notes textarea).
-  - `frontend/src/components/assessment/ProgressBar.tsx` (global + section progress).
-  - `frontend/src/hooks/useDebounce.ts` (500ms) + `useAutosaveAnswers.ts` calling `POST /api/assessments/:id/answers`.
-  - Free navigation: route `/assessment/:id` with section query param; no forced linear order.
+  - `frontend/src/components/assessment/BlockNavigator.tsx` (sidebar of 3 blocks with progress).
+  - `frontend/src/components/assessment/QuestionCard.tsx` (scale 0/35/70/100 buttons for scale questions, Sí/No for gate/validation, notes textarea).
+  - `frontend/src/components/assessment/ProgressBar.tsx` (global + per-block progress).
+  - Auto-save with debounce (500ms) via `POST /api/assessments/:id/answers`.
+  - Free navigation between blocks (no forced linear order).
+  - Gate logic: P1=No → P2-P5 grayed out with forced=0 (frontend already has applyGate in assessmentStore).
 
 **Deliverables:**
-- DB rows: 10 sections + 43 seeded questions.
-- Endpoints: 3 question + 5 assessment + 2 answer endpoints.
-- Frontend: AssessmentPage with working auto-save + progress.
+- Endpoints: 3 block/question + 4 assessment + 2 answer endpoints.
+- Frontend: AssessmentPage with working auto-save + progress + gate logic.
 
 **Acceptance Criteria:**
 - A new assessment returns empty answers; answering ~half the questions shows ~50% progress.
-- Auto-save fires ≤500ms after each change; reload保留了 all answers.
-- Completing all sections and calling `PUT /api/assessments/:id` with `status=completed` succeeds; incomplete returns 422.
-- Tenant isolation: cannot fetch another company's assessment (404).
+- Auto-save fires ≤500ms after each change; reload preserves all answers.
+- Gate P1=No forces P2-P5 to 0 and disables those questions in the UI.
+- Completing all 9 scored questions (P2-P10) and calling `PUT /api/assessments/{id}` with `status=completed` succeeds.
+- Assessment uses polymorphic answer columns: scale_resp (0/35/70/100), gate_resp (bool), validation_resp (bool).
 
 **Estimated Effort:** Large
 
-**Key Decisions & Risks:**
-- *Decision:* Upsert answers by composite key `(assessment_id, question_id)` to keep auto-save idempotent.
-- *Decision:* Allow completion only when all non-optional questions answered (rules in `assessment_service.py`).
-- *Risk:* Race conditions from rapid auto-save writes → use `INSERT ... ON CONFLICT DO UPDATE` per-question, not bulk.
+**Key Decisions:**
+- *Answer model:* Polymorphic columns per question kind (scale_resp, gate_resp, validation_resp) with CHECK constraints.
+- *Gate logic:* Scoring computes Bloque 1 = 0% when P1=No (computed at completion, not persisted).
+- *Seed data:* Already populated in Phase 2.
 
 ---
 
-## Phase 4: Scoring (Section + Global, Percentage, Maturity Matrix)
+## Phase 4: Scoring (Block + Global, Percentage, Maturity Matrix)
 
-**Objective:** Compute per-section and global compliance scores, derive a maturity level, and surface results in the UI.
+**Objective:** Compute per-block and global compliance scores, derive a maturity level, and surface results in the UI.
 
 **Dependencies:** Phase 3 (answers persisted).
 
 **Tasks:**
 - Create `backend/app/services/scoring_service.py`:
-  - Per-question map: `Sí=1.0`, `Parcial=0.5`, `No=0.0`, `N/A` excluded from denominator.
-  - Section score = `sum / count(answered non-na)`.
-  - Global = simple average across sections (equal weights, per PLAN).
-  - Maturity classification per thresholds in PLAN's *Lógica de Scoring*.
-- Persist rows into `scores` table (section_id, score, max_score, percentage, maturity).
-- Hook scoring into `assessment_service.complete_assessment()` (trigger on `PUT /api/assessments/:id` status=completed).
-- Endpoints: `GET /api/assessments/:id/scores`, `GET /api/assessments/:id/results` (aggregate: scores + metadata).
-- Frontend:
-  - `frontend/src/pages/ResultsPage.tsx`.
-  - `frontend/src/components/dashboard/ScoreCard.tsx` (global % + maturity label/badge).
-  - Section-by-section breakdown card.
-
-**Deliverables:**
-- Service: `scoring_service.py`.
-- Endpoints: scores + results.
-- Frontend: ResultsPage with ScoreCard + section breakdown.
-
-**Acceptance Criteria:**
-- A fully-completed all-"Sí" assessment scores 100% → "Optimizado".
-- A fully-"No" assessment scores 0% → "No existe".
-- "Parcial" averages correctly (e.g., 2 Sí + 2 Parcial + 0 No in a 4-question section = 75%).
-- N/A questions do not inflate or deflate percentages.
-- Recompleting an assessment recomputes and replaces `scores` rows, not duplicates.
-
-**Estimated Effort:** Medium
-
-**Key Decisions & Risks:**
-- *Decision:* Store scale in `scores` and recompute on completion (no partial in-progress scoring) to avoid drift.
-- *Risk:* Maturity thresholds off-by-one at boundary 20/40/60/80 → encode in a single constants module to make tests assertive.
+  - Per-question scale: 0/35/70/100 mapped to raw points (weight * scale/100).
+  - Gate rule: P1=No → Bloque 1 = 0% regardless of P2-P5 answers.
+  - Block score = sum of raw points for block's scale questions / max possible.
+  - Global score = sum of P2-P10 raw points (weights sum to 100, so raw points = percentage).
+  - Maturity classification: 0-39% Crítico, 40-69% Básico, 70-89% Avanzado, 90-100% Optimizado.
+- Persist rows into `scores` table (block_id, score, max_score, percentage).
+- Hook scoring into `assessment_service.complete_assessment()` (trigger on PUT status=completed).
+- Endpoints: `GET /api/assessments/:id/scores`, `GET /api/assessments/:id/results`.
+- Frontend: `ResultsPage.tsx` with ScoreCard + maturity badge + per-block breakdown.
 
 ---
 
@@ -388,17 +379,17 @@ This document defines the **9-phase implementation plan** for the *Diagnóstico 
 
 ## Phase Summary Matrix
 
-| # | Phase | Effort | Demoable Outcome |
-|---|-------|--------|------------------|
-| 1 | Setup & Infra | Large | OAuth login working in Docker |
-| 2 | Models + Base API | Large | Multi-tenant CRUD + admin users UI |
-| 3 | Questionnaire | Large | Full 43-question flow with auto-save |
-| 4 | Scoring | Medium | Maturity matrix + results page |
-| 5 | AI Integration | Large | Explain/Suggest + final recommendations |
-| 6 | Reports | Medium | PDF + Excel + share links |
-| 7 | Action Plan | Small | Trackable checklist with assignment |
-| 8 | Dashboard | Medium | Charts, trend, history |
-| 9 | Security + Polish | Medium | OWASP-clean, responsive, a11y-grade app |
+| # | Phase | Effort | Demoable Outcome | Status |
+|---|-------|--------|------------------|--------|
+| 1 | Setup & Infra | Large | Supabase Auth (email/password) working in Docker | 🟢 DONE |
+| 2 | Models + Base API | Large | 11 tables on Supabase, companies CRUD, onboarding UI | 🟢 DONE |
+| 3 | Questionnaire | Large | 11-question flow (gate/scale/validation) with auto-save | 🔵 NEXT |
+| 4 | Scoring | Medium | Maturity matrix + results page | ⬜ |
+| 5 | AI Integration | Large | Explain/Suggest + final recommendations | ⬜ |
+| 6 | Reports | Medium | PDF + Excel + share links | ⬜ |
+| 7 | Action Plan | Small | Trackable checklist with assignment | ⬜ |
+| 8 | Dashboard | Medium | Charts, trend, history | ⬜ |
+| 9 | Security + Polish | Medium | OWASP-clean, responsive, a11y-grade app | ⬜ |
 
 ---
 

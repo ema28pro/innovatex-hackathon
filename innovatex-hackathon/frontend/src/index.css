@@ -37,4 +37,38 @@
   .auth-card {
     @apply w-full max-w-md bg-white rounded-lg border border-slate-200 shadow-sm;
   }
+
+  .progress-track {
+    @apply w-full h-2 bg-slate-200 rounded-full overflow-hidden;
+  }
+  .progress-fill {
+    @apply h-full bg-brand-800 transition-all duration-500;
+  }
+  .radio-card {
+    @apply flex items-start gap-4 p-4 border-2 border-slate-200 rounded-lg cursor-pointer hover:border-brand-300 transition-all;
+  }
+  .radio-card.selected {
+    @apply border-brand-700 bg-brand-50;
+  }
+  .radio-card.disabled {
+    @apply opacity-50 cursor-not-allowed border-slate-100;
+  }
+  .gate-btn {
+    @apply flex-1 py-3 px-6 border-2 border-slate-200 rounded-lg text-sm font-medium cursor-pointer hover:border-brand-300 transition-all text-center;
+  }
+  .gate-btn.selected {
+    @apply border-brand-700 bg-brand-700 text-white;
+  }
+  .maturity-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  .block-tab {
+    @apply flex-1 py-3 px-4 text-center text-sm font-medium border-b-2 border-transparent cursor-pointer hover:bg-slate-50 transition-colors;
+  }
+  .block-tab.active {
+    @apply border-brand-700 text-brand-700;
+  }
+  .block-tab.completed {
+    @apply text-green-600;
+  }
 }

@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '@/lib/supabase'
 
@@ -10,6 +10,29 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        setChecking(false)
+      }
+    })
+  }, [navigate])
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-slate-300 border-t-brand-800 rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Verificando sesión...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -51,7 +74,7 @@ export default function RegisterPage() {
 
       // If email confirmation is disabled, user is immediately signed in
       if (data.session) {
-        navigate('/dashboard', { replace: true })
+        navigate('/onboarding', { replace: true })
       } else {
         // Email confirmation required
         setSuccess(true)

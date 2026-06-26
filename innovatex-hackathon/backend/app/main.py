@@ -32,11 +32,11 @@ async def health_check():
     return {"status": "ok"}
 
 
-try:
-    from app.routers import auth
-    app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-except ImportError:
-    pass
+from app.routers import auth
+app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+
+from app.routers import companies
+app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 
 
 @app.get("/")

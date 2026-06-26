@@ -14,7 +14,9 @@
     "repo_path": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon",
     "current_branch": "phase-1-project-setup-infra",
     "current_phase": 1,
-    "phase_name": "Project Setup & Infrastructure",
+    "next_phase": 2,
+    "next_phase_name": "Modelos + Onboarding",
+    "phase_name": "Project Setup & Infrastructure (COMPLETED)",
     "language": "es-CO",
     "target_audience": "Colombian organizations requiring Ley 1581 compliance"
   },
@@ -24,11 +26,15 @@
       "framework": "FastAPI",
       "language": "Python 3.12",
       "package_manager": "UV",
-      "database": "PostgreSQL 16",
+      "database": "PostgreSQL 16 (Supabase managed — project asgofjauortyigsoliii)",
       "db_driver": "psycopg[binary]",
-      "orm": "SQLAlchemy",
+      "orm": "SQLAlchemy 2.0",
       "migrations": "Alembic",
-      "auth_provider": "Supabase Auth (NOT OAuth2 — this overrides original PLAN.md OAuth2 design)",
+      "auth_provider": "Supabase Auth (NOT OAuth2 — this overrides original PLAN.md OAuth2 design) + Supabase managed PostgreSQL (Path B)",
+      "db_connection": {
+        "direct": "postgresql+psycopg://postgres:***@db.asgofjauortyigsoliii.supabase.co:5432/postgres (migrations/DDL)",
+        "pooler": "postgresql+psycopg://postgres.asgofjauortyigsoliii:***@aws-0-us-east-1.pooler.supabase.co:6543/postgres (app runtime)"
+      },
       "dependencies": [
         "fastapi", "uvicorn[standard]", "sqlalchemy", "psycopg[binary]",
         "alembic", "pydantic-settings", "python-jose", "passlib",
@@ -53,7 +59,8 @@
     "infrastructure": {
       "containerization": "Docker + docker-compose",
       "reverse_proxy": "Nginx",
-      "services": ["postgres", "backend", "frontend", "nginx"],
+      "services": ["backend", "frontend", "nginx"],
+      "_note": "PostgreSQL service REMOVED from docker-compose — Supabase provides managed PostgreSQL (Path B architecture)",
       "project_root": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon"
     },
     "ai_integration": {
@@ -277,61 +284,64 @@
   "data_model": {
     "tables": [
       {
-        "name": "users",
-        "columns": "id (PK), email (UQ), name, created_at, updated_at",
-        "notes": "Supabase Auth provides the JWT; this table mirrors the Supabase user for app-level data"
+        "name": "profiles",
+        "columns": "id (PK, UUID, FK→auth.users(id) ON DELETE RESTRICT), display_name, avatar_url, created_at, updated_at",
+        "notes": "Path B: FK directly to Supabase auth.users — NO shadow table. Stores app-level profile data not in auth.users."
       },
       {
         "name": "companies",
-        "columns": "id (PK), name, nit, sector, size, contact_email, employee_count, db_count, data_types_processed, created_at",
-        "notes": "Multi-tenant root entity"
+        "columns": "id (PK), name, nit (UQ), sector (ENUM), size (ENUM), contact_email, employee_count, created_at, updated_at",
+        "notes": "Multi-tenant root entity. sector_enum: publico/privado/mixto/ong/otro. size_enum: micro/pequena/mediana/grande."
       },
       {
-        "name": "user_company_roles",
-        "columns": "id (PK), user_id (FK→users), company_id (FK→companies), role (enum: admin/auditor/reader)",
-        "notes": "Tenant-role join table"
+        "name": "company_members",
+        "columns": "id (PK), company_id (FK→companies RESTRICT), profile_id (FK→profiles RESTRICT), role (ENUM: admin/auditor/reader), created_at. UNIQUE(company_id, profile_id)",
+        "notes": "Tenant-role join table. Composite UNIQUE prevents duplicate memberships."
       },
       {
-        "name": "assessments",
-        "columns": "id (PK), company_id (FK→companies), created_by (FK→users), status (in_progress/completed), overall_score, completed_at, created_at, updated_at"
+        "name": "evaluations",
+        "columns": "id (PK), company_id (FK→companies RESTRICT), created_by (FK→profiles RESTRICT), status (ENUM: in_progress/completed), overall_score (NUMERIC(5,2)), finished_at (NULLABLE), created_at, updated_at",
+        "notes": "finished_at is NULL while in_progress; set only on completion. No DEFAULT now()."
       },
       {
-        "name": "assessment_answers",
-        "columns": "id (PK), assessment_id (FK→assessments), section_id (FK→sections), question_id (FK→questions), answer (yes/no/partial/na), notes",
-        "notes": "Upsert by composite (assessment_id, question_id)"
+        "name": "answers",
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), question_id (FK→questions RESTRICT), response (ENUM: yes/no/partial/na), notes (TEXT NULLABLE). UNIQUE(evaluation_id, question_id)",
+        "notes": "Composite UNIQUE for upsert. response is ENUM NOT BOOLEAN — NA excluded from denominator."
       },
       {
         "name": "sections",
-        "columns": "id (PK), name, order, is_optional",
-        "notes": "10 fixed sections seeded"
+        "columns": "id (PK), name (VARCHAR), order (INT), is_optional (BOOLEAN DEFAULT false)",
+        "notes": "10 fixed sections seeded per PLAN.md questionnaire design"
       },
       {
         "name": "questions",
-        "columns": "id (PK), section_id (FK→sections), text, order, legal_reference, ai_explanation_prompt",
-        "notes": "43 questions seeded per questionnaire design"
+        "columns": "id (PK), section_id (FK→sections RESTRICT), text (TEXT NOT NULL), order (INT), legal_reference (TEXT), ai_explanation_prompt (TEXT)",
+        "notes": "Seeded per questionnaire design. Awaiting resolution of PLAN-vs-frontend conflict."
       },
       {
         "name": "scores",
-        "columns": "id (PK), assessment_id (FK→assessments), section_id (FK→sections), score, max_score, percentage",
-        "notes": "Recomputed and replaced on assessment completion"
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), section_id (FK→sections RESTRICT), score (NUMERIC(5,2)), max_score (NUMERIC(5,2)), percentage (NUMERIC(5,2))",
+        "notes": "NUMERIC(5,2) — NOT DOUBLE PRECISION. Recomputed on evaluation completion."
       },
       {
         "name": "recommendations",
-        "columns": "id (PK), assessment_id (FK→assessments), section_id (FK→sections), ai_generated_text, priority (high/medium/low)"
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), section_id (FK→sections RESTRICT), ai_generated_text (TEXT NOT NULL), priority (ENUM: high/medium/low)",
+        "notes": "AI-generated post-assessment recommendations"
       },
       {
         "name": "action_items",
-        "columns": "id (PK), recommendation_id (FK→recommendations), assessment_id (FK→assessments), status (pending/in_progress/completed), assigned_to (FK→users), notes",
+        "columns": "id (PK), recommendation_id (FK→recommendations RESTRICT), evaluation_id (FK→evaluations RESTRICT), status (ENUM: pending/in_progress/completed), assigned_to (FK→profiles RESTRICT), notes (TEXT), created_at, updated_at",
         "notes": "No due dates in MVP"
       },
       {
         "name": "share_links",
-        "columns": "id (PK), assessment_id (FK→assessments), token (UQ, UUID), expires_at, created_by (FK→users)"
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), token (UUID UQ NOT NULL), expires_at (TIMESTAMPTZ NOT NULL), created_by (FK→profiles RESTRICT), created_at",
+        "notes": "Public share links for assessment results"
       }
     ],
     "total_tables": 11,
-    "indexes": ["uix_user_email", "uix_share_token", "FK indexes on all foreign keys"],
-    "delete_strategy": "RESTRICT (soft cascade) — preserve audit trail"
+    "indexes": ["ix_share_token (UNIQUE)", "FK indexes on ALL foreign key columns (per audit DM-10)"],
+    "delete_strategy": "ALL FKs use ON DELETE RESTRICT — preserve audit trails, return 409 on conflict (per audit DM-01)"
   },
 
   "frontend_routes": [
@@ -420,6 +430,28 @@
       "current_decision": "UV (modern Python package manager)",
       "source": "User-provided metadata override",
       "impact": "Dependencies managed via uv instead of pip; may use pyproject.toml instead of requirements.txt"
+    },
+    {
+      "topic": "Database infrastructure (Path B)",
+      "plan_documentation": "Docker PostgreSQL service (postgres:16-alpine in docker-compose.yml)",
+      "current_decision": "Supabase managed PostgreSQL (project asgofjauortyigsoliii) — NO local Docker PostgreSQL",
+      "source": "User-provided architectural decision (Path B)",
+      "impact": "Docker PostgreSQL service removed. profiles FK directly to auth.users(id). Connection strings point to Supabase PostgreSQL (direct for migrations, pooler for app)."
+    },
+    {
+      "topic": "User table design",
+      "plan_documentation": "Shadow `users` table mirroring auth users",
+      "current_decision": "`profiles` table with FK directly to `auth.users(id)` — NO shadow table",
+      "source": "Path B architectural decision",
+      "impact": "Simpler schema, no sync needed between auth.users and a shadow table. profiles stores only app-level extensions (display_name, avatar_url, preferences)."
+    },
+    {
+      "topic": "Questionnaire design — UNRESOLVED",
+      "plan_documentation": "PLAN.md specifies 10 sections, 43 questions, answer scale yes/no/partial/na",
+      "current_decision": "Frontend code currently implements 3 blocks (politica, diseno, gobernanza), 11 questions, answer scale 0/35/70/100",
+      "source": "Code-vs-documentation audit",
+      "impact": "MUST be resolved before Phase 3 (Questionnaire). Affects: questions table schema, answer ENUM values, scoring logic, seed data, frontend questionnaire components. Flagged for user decision.",
+      "_status": "UNRESOLVED — user must decide before implementing"
     }
   ]
 }

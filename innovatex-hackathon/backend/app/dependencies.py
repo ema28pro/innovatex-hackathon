@@ -19,7 +19,7 @@ class UserPayload:
     role: str
 
 
-def _get_jwks_public_key() -> str:
+def _get_jwks_public_key(token_kid: str = "") -> str:
     """
     Build the ES256 public key from the Supabase JWKS.
     
@@ -27,18 +27,24 @@ def _get_jwks_public_key() -> str:
     Otherwise falls back to HS256 with SUPABASE_JWT_SECRET.
     """
     if settings.SUPABASE_JWKS_URL:
-        # Dynamic JWKS: fetch and extract the public key
         import httpx
+        import json as _json
         try:
             response = httpx.get(settings.SUPABASE_JWKS_URL, timeout=10)
             response.raise_for_status()
             jwks = response.json()
-            # Use the first key (Supabase typically has one)
-            key_data = jwks["keys"][0]
-        except Exception:
+            # Find key matching the token's kid, fall back to first key
+            key_data = None
+            for key in jwks["keys"]:
+                if token_kid and key.get("kid") == token_kid:
+                    key_data = key
+                    break
+            if key_data is None:
+                key_data = jwks["keys"][0]
+        except Exception as exc:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to fetch JWKS for token verification",
+                detail=f"Failed to fetch JWKS: {exc}",
             )
         return _build_ec_public_key(key_data)
     elif settings.SUPABASE_JWT_SECRET:
@@ -80,7 +86,18 @@ def verify_supabase_jwt(token: str) -> UserPayload:
     try:
         # Try JWKS (ES256) first
         if settings.SUPABASE_JWKS_URL:
-            public_key = _get_jwks_public_key()
+            # Extract kid from token header before decoding
+            import json as _json
+            import base64
+            header_part = token.split(".")[0]
+            header_part += "=" * (4 - len(header_part) % 4)
+            try:
+                header = _json.loads(base64.urlsafe_b64decode(header_part).decode())
+            except Exception:
+                header = {}
+            kid = header.get("kid", "")
+
+            public_key = _get_jwks_public_key(kid)
             algorithms = ["ES256"]
             secret_or_key = public_key
         elif settings.SUPABASE_JWT_SECRET:

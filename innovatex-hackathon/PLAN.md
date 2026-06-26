@@ -13,7 +13,7 @@ Plataforma web que diagnostica el estado actual de cumplimiento de la Ley 1581 d
 | Frontend | React + Vite + Tailwind CSS + shadcn/ui |
 | Backend | Python + FastAPI |
 | DB | PostgreSQL |
-| Auth | OAuth2 (Google + Microsoft) via `authlib` |
+| Auth | Supabase (email/password + JWT) |
 | IA | Capa agnóstica (OpenAI/Anthropic/Gemini intercambiables) |
 | Reportes | `reportlab` (PDF) + `openpyxl` (Excel) |
 | Deploy | Docker + docker-compose |
@@ -25,15 +25,16 @@ Plataforma web que diagnostica el estado actual de cumplimiento de la Ley 1581 d
 ```
 ┌─────────────────────────────────────────────────┐
 │  Frontend (React + Vite)                        │
-│  - Auth (OAuth redirect)                        │
+│  - Auth (Supabase email/password)               │
+│  - Onboarding (creación de empresa)             │
 │  - Dashboard corporativo                        │
 │  - Cuestionario interactivo con IA              │
 │  - Reportes y plan de acción                    │
 └──────────────┬──────────────────────────────────┘
-               │ REST API
+               │ REST API + Supabase JWT
 ┌──────────────▼──────────────────────────────────┐
 │  Backend (FastAPI)                              │
-│  - Auth + JWT                                   │
+│  - Auth (verificación JWT Supabase)             │
 │  - Multi-tenant middleware                      │
 │  - Cuestionario engine                          │
 │  - IA service (agnóstico)                       │
@@ -54,8 +55,9 @@ Plataforma web que diagnostica el estado actual de cumplimiento de la Ley 1581 d
 ## Modelo de Datos
 
 ```
-users
-├── id, email, name, provider, provider_id
+users (shadow table — id = Supabase UUID)
+├── id (UUID, FK a Supabase auth.users)
+├── email, name
 ├── created_at, updated_at
 
 companies (tenants)
@@ -65,6 +67,7 @@ companies (tenants)
 
 user_company_roles
 ├── user_id, company_id, role (admin/auditor/reader)
+├── created_at
 
 assessments (diagnósticos)
 ├── id, company_id, created_by, status (in_progress/completed)
@@ -106,10 +109,10 @@ share_links
 
 | Módulo | Responsabilidad |
 |--------|----------------|
-| `auth` | OAuth Google/Microsoft, JWT, refresh tokens |
-| `users` | CRUD usuarios, perfil |
-| `companies` | CRUD empresas, multi-tenant |
-| `roles` | Asignación de roles por empresa |
+| `auth` | Verificación JWT Supabase, endpoints `/me` y `/verify` |
+| `users` | Shadow table de usuarios (upsert on first action) |
+| `companies` | CRUD empresas, onboarding, multi-tenant |
+| `roles` | Asignación de roles por empresa (auto-admin al crear) |
 | `assessments` | Crear, listar, completar diagnósticos |
 | `questions` | Secciones y preguntas del cuestionario |
 | `answers` | Guardado automático de respuestas |
@@ -157,7 +160,9 @@ class AIService(Protocol):
 
 | Ruta | Descripción |
 |------|-------------|
-| `/login` | Pantalla de login con botones OAuth |
+| `/login` | Pantalla de login con email/password (Supabase) |
+| `/register` | Registro de usuario con email/password |
+| `/onboarding` | Creación obligatoria de empresa (nombre, NIT, sector, tamaño) |
 | `/dashboard` | Vista general: último diagnóstico, score, tendencias |
 | `/company/profile` | Datos de la empresa |
 | `/company/switch` | Cambiar de empresa (multi-tenant) |
@@ -169,6 +174,22 @@ class AIService(Protocol):
 | `/assessment/:id/export` | Exportar PDF/Excel/link |
 | `/admin/users` | Gestión de usuarios de la empresa |
 | `/history` | Histórico de diagnósticos |
+
+### Flujo de Onboarding
+
+Después del registro o login, si el usuario no tiene empresas asociadas, es redirigido automáticamente a `/onboarding` donde debe crear su primera empresa. El usuario creador es asignado automáticamente como **admin**.
+
+**Campos del formulario de onboarding:**
+- Nombre de la empresa (requerido)
+- NIT (requerido, texto libre)
+- Sector (Tecnología, Salud, Finanzas, Comercio, Manufactura, Educación, Gobierno, Otro)
+- Tamaño (Micro 1-10, Pequeña 11-50, Mediana 51-200, Grande 200+)
+
+**Lógica de redirección (ProtectedRoute):**
+- Auth cargando → spinner
+- No autenticado → `/login`
+- Autenticado sin empresas → `/onboarding`
+- Autenticado con empresas → renderizar contenido
 
 ---
 
@@ -259,7 +280,8 @@ class AIService(Protocol):
 
 ## Seguridad (OWASP)
 
-- JWT con expiración corta + refresh token
+- JWT Supabase con expiración corta + refresh token automático
+- Verificación JWT en backend (ES256 vía JWKS o HS256 fallback)
 - HTTPS obligatorio
 - Rate limiting en API
 - Sanitización de inputs
@@ -302,6 +324,7 @@ class AIService(Protocol):
 ```
 reto_hackaton/
 ├── docker-compose.yml
+├── .env.example
 ├── PLAN.md
 ├── frontend/
 │   ├── Dockerfile
@@ -314,16 +337,22 @@ reto_hackaton/
 │   └── src/
 │       ├── main.tsx
 │       ├── App.tsx
-│       ├── api/              # Cliente API (axios)
-│       ├── components/       # Componentes reutilizables
-│       │   ├── ui/           # shadcn/ui components
-│       │   ├── layout/       # Header, Sidebar, Layout
-│       │   ├── assessment/   # QuestionCard, SectionNav, ProgressBar
-│       │   ├── dashboard/    # ScoreCard, RadarChart, TrendChart
-│       │   └── action-plan/  # ActionItem, ChecklistView
-│       ├── hooks/            # Custom hooks
-│       ├── pages/            # Páginas/rutas
+│       ├── index.css            # Tailwind + custom component classes
+│       ├── api/                 # Cliente API (axios)
+│       │   ├── client.ts        # Axios instance + interceptors
+│       │   └── companies.ts     # API de empresas
+│       ├── components/          # Componentes reutilizables
+│       │   ├── ui/              # shadcn/ui components
+│       │   ├── ProtectedRoute.tsx  # Auth guard + onboarding redirect
+│       │   ├── layout/          # Header, Sidebar, Layout
+│       │   ├── assessment/      # QuestionCard, SectionNav, ProgressBar
+│       │   ├── dashboard/       # ScoreCard, RadarChart, TrendChart
+│       │   └── action-plan/     # ActionItem, ChecklistView
+│       ├── hooks/               # Custom hooks
+│       ├── pages/               # Páginas/rutas
 │       │   ├── LoginPage.tsx
+│       │   ├── RegisterPage.tsx
+│       │   ├── OnboardingPage.tsx  # Creación de empresa (forzada)
 │       │   ├── DashboardPage.tsx
 │       │   ├── CompanyProfilePage.tsx
 │       │   ├── AssessmentPage.tsx
@@ -333,55 +362,59 @@ reto_hackaton/
 │       │   ├── ExportPage.tsx
 │       │   ├── AdminUsersPage.tsx
 │       │   └── HistoryPage.tsx
-│       ├── stores/           # Estado global (zustand)
-│       ├── types/            # Tipos TypeScript
-│       └── lib/              # Utilidades
+│       ├── stores/              # Estado global (zustand)
+│       │   ├── authStore.ts     # Sesión Supabase
+│       │   └── companyStore.ts  # Empresas del usuario + empresa seleccionada
+│       ├── types/               # Tipos TypeScript
+│       │   └── company.ts       # Company, CompanyCreate, CompanyListItem
+│       └── lib/                 # Utilidades
+│           └── supabase.ts      # Cliente Supabase JS
 ├── backend/
 │   ├── Dockerfile
-│   ├── requirements.txt
+│   ├── pyproject.toml           # Dependencias (uv)
+│   ├── uv.lock
 │   ├── app/
-│   │   ├── main.py           # FastAPI app
-│   │   ├── config.py         # Settings (pydantic-settings)
-│   │   ├── database.py       # SQLAlchemy engine + session
-│   │   ├── models/           # Modelos SQLAlchemy
-│   │   │   ├── user.py
-│   │   │   ├── company.py
+│   │   ├── main.py              # FastAPI app
+│   │   ├── config.py            # Settings (pydantic-settings)
+│   │   ├── database.py          # SQLAlchemy engine + session
+│   │   ├── dependencies.py      # Verificación JWT Supabase (ES256/HS256)
+│   │   ├── models/              # Modelos SQLAlchemy
+│   │   │   ├── user.py          # Shadow table (id=Supabase UUID)
+│   │   │   ├── company.py       # Company + UserCompanyRole
 │   │   │   ├── assessment.py
 │   │   │   ├── question.py
 │   │   │   ├── recommendation.py
 │   │   │   └── action_item.py
-│   │   ├── schemas/          # Pydantic schemas
-│   │   │   ├── user.py
-│   │   │   ├── company.py
+│   │   ├── schemas/             # Pydantic schemas
+│   │   │   ├── company.py       # CompanyCreate, CompanyRead, CompanyListItem
 │   │   │   ├── assessment.py
 │   │   │   ├── question.py
 │   │   │   └── report.py
-│   │   ├── routers/          # Endpoints
-│   │   │   ├── auth.py
-│   │   │   ├── users.py
-│   │   │   ├── companies.py
+│   │   ├── routers/             # Endpoints
+│   │   │   ├── auth.py          # GET /me, GET /verify
+│   │   │   ├── companies.py     # GET /, POST /, GET /{id}
 │   │   │   ├── assessments.py
 │   │   │   ├── questions.py
 │   │   │   ├── reports.py
 │   │   │   └── action_plans.py
-│   │   ├── services/         # Lógica de negocio
-│   │   │   ├── auth_service.py
+│   │   ├── services/            # Lógica de negocio
+│   │   │   ├── company_service.py  # Upsert user + create company + assign admin
 │   │   │   ├── assessment_service.py
 │   │   │   ├── scoring_service.py
 │   │   │   └── report_service.py
-│   │   ├── ai/               # Servicio IA agnóstico
-│   │   │   ├── base.py       # Protocol/Interface
+│   │   ├── ai/                  # Servicio IA agnóstico
+│   │   │   ├── base.py          # Protocol/Interface
 │   │   │   ├── openai_provider.py
 │   │   │   ├── anthropic_provider.py
 │   │   │   └── gemini_provider.py
-│   │   ├── reports/          # Generadores PDF/Excel
+│   │   ├── reports/             # Generadores PDF/Excel
 │   │   │   ├── pdf_generator.py
 │   │   │   └── excel_generator.py
-│   │   └── middleware/       # Multi-tenant, auth
-│   │       ├── auth_middleware.py
+│   │   └── middleware/          # Multi-tenant, auth
 │   │       └── tenant_middleware.py
-│   └── alembic/              # Migraciones DB
+│   └── alembic/                 # Migraciones DB
 │       ├── alembic.ini
+│       ├── env.py
 │       └── versions/
 └── nginx/
     └── nginx.conf
@@ -393,8 +426,8 @@ reto_hackaton/
 
 | Fase | Tareas |
 |------|--------|
-| **1. Setup** | Docker, docker-compose, DB, migraciones Alembic, auth OAuth |
-| **2. Modelos + API base** | Users, Companies, Roles, endpoints CRUD |
+| **1. Setup + Auth** | Docker, docker-compose, DB, Supabase auth (frontend login/register), JWT verification (backend) |
+| **2. Modelos + Onboarding** | Users (shadow table), Companies, UserCompanyRole, Alembic migration, API CRUD empresas, onboarding forzado (frontend) |
 | **3. Cuestionario** | Secciones, preguntas, respuestas, guardado automático |
 | **4. Scoring** | Cálculo de puntajes por sección, global, porcentaje, matriz de madurez |
 | **5. IA** | Integración agnóstica: explicaciones en tiempo real + recomendaciones finales |
@@ -407,24 +440,25 @@ reto_hackaton/
 
 ## Requerimientos Funcionales
 
-1. **Registro e inicio de sesión** mediante OAuth (Google, Microsoft)
-2. **Captura de información básica de la empresa** (nombre, NIT, sector, tamaño, contacto, cantidad empleados, bases de datos, tipos de datos)
-3. **Ejecución de cuestionario estructurado** con 10 secciones fijas + secciones opcionales
-4. **Asistencia por IA** para explicar preguntas y sugerir respuestas en tiempo real
-5. **Generación de recomendaciones automáticas** por IA al completar el diagnóstico
-6. **Cálculo de resultado porcentual** de cumplimiento con matriz de madurez
-7. **Diagnóstico visual claro** con gráficos de radar por sección y score global
-8. **Estrategias para cerrar brechas** mediante plan de acción con checklist
-9. **Seguimiento del plan de acción** con estados y asignación de responsables
-10. **Exportación de reportes** en PDF, Excel y link compartible
-11. **Multi-empresa** con roles (Admin, Auditor, Lector)
-12. **Guardado automático** del progreso del cuestionario
-13. **Histórico de diagnósticos** por empresa
+1. **Registro e inicio de sesión** mediante Supabase (email/password)
+2. **Onboarding obligatorio**: creación de empresa (nombre, NIT, sector, tamaño) tras registro o login sin empresas
+3. **Captura de información básica de la empresa** (nombre, NIT, sector, tamaño, contacto, cantidad empleados, bases de datos, tipos de datos)
+4. **Ejecución de cuestionario estructurado** con 10 secciones fijas + secciones opcionales
+5. **Asistencia por IA** para explicar preguntas y sugerir respuestas en tiempo real
+6. **Generación de recomendaciones automáticas** por IA al completar el diagnóstico
+7. **Cálculo de resultado porcentual** de cumplimiento con matriz de madurez
+8. **Diagnóstico visual claro** con gráficos de radar por sección y score global
+9. **Estrategias para cerrar brechas** mediante plan de acción con checklist
+10. **Seguimiento del plan de acción** con estados y asignación de responsables
+11. **Exportación de reportes** en PDF, Excel y link compartible
+12. **Multi-empresa** con roles (Admin, Auditor, Lector) — un usuario puede registrar múltiples empresas
+13. **Guardado automático** del progreso del cuestionario
+14. **Histórico de diagnósticos** por empresa
 
 ## Requerimientos No Funcionales
 
 1. **Fácil de usar** y amigable (UX intuitiva)
-2. **Segura** (OWASP, JWT, HTTPS, aislamiento de tenants)
+2. **Segura** (OWASP, Supabase JWT, HTTPS, aislamiento de tenants)
 3. **Escalable** (multiempresa, arquitectura modular)
 4. **Basada en buenas prácticas** (OWASP, privacidad por diseño)
 5. **Portable** (Docker, desplegable en cualquier cloud)

@@ -11,7 +11,13 @@
       "path": ".opencode/context/quick-ref.json",
       "description": "Single-page quick reference for agents needing fast answers",
       "size": "~2KB",
-      "updated": "2026-06-26T12:00:00Z"
+      "updated": "2026-06-26T12:30:00Z"
+    },
+    "phase-2-context.json": {
+      "path": ".opencode/context/phase-2-context.json",
+      "description": "Phase 2 planning: models, migration, CRUD empresas, onboarding. Path B architecture, audit design decisions, PLAN-vs-frontend conflict, implementation order",
+      "size": "~8KB",
+      "updated": "2026-06-26T12:30:00Z"
     }
   },
   "query_patterns": {
@@ -24,6 +30,11 @@
     "questionnaire": "Read global-context.json → $.questionnaire_sections",
     "security": "Read global-context.json → $.security_requirements",
     "conventions": "Read global-context.json → $.cross_cutting_conventions",
-    "all_phases": "Read global-context.json → $.all_phases_summary"
+    "all_phases": "Read global-context.json → $.all_phases_summary",
+    "phase_2_planning": "Read phase-2-context.json for full Phase 2 scope, architecture, audit decisions, conflicts, and implementation plan",
+    "path_b_architecture": "Read phase-2-context.json → $.architectural_decision_path_b",
+    "supabase_connection": "Read phase-2-context.json → $.architectural_decision_path_b.connection_strings",
+    "phase_2_data_model": "Read phase-2-context.json → $.table_schema_phase2 + $.data_model_changes_from_audit",
+    "questionnaire_conflict": "Read phase-2-context.json → $.plan_vs_frontend_conflict"
   }
 }

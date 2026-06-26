@@ -4,28 +4,24 @@ import { useAuthStore } from '@/stores/authStore'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
+import OnboardingPage from '@/pages/OnboardingPage'
 import DashboardPage from '@/pages/DashboardPage'
+import AssessmentPage from '@/pages/AssessmentPage'
 
 function App() {
   const init = useAuthStore((state) => state.init)
-
-  useEffect(() => {
-    init()
-  }, [init])
+  useEffect(() => { init() }, [init])
 
   return (
     <div className="min-h-screen bg-slate-50">
       <Routes>
-        {/* Public routes */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
-        {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/assessment/:id" element={<AssessmentPage />} />
         </Route>
-
-        {/* Default redirect */}
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>

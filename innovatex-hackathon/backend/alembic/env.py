@@ -9,6 +9,9 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from app.config import settings
 from app.database import Base
 
+# Import all models so Base.metadata is fully populated for autogenerate
+import app.models  # noqa: F401
+
 config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

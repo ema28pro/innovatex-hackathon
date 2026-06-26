@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=(".env", "../.env"),  # try backend/.env first, then repo-root/.env
         env_file_encoding="utf-8",
         extra="ignore",
     )
@@ -16,8 +16,11 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = "/api"
     APP_VERSION: str = "0.1.0"
 
-    # Database
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/diagnostico"
+    # Database — Supabase managed PostgreSQL (Path B)
+    # Direct connection (for Alembic DDL / migrations):
+    DATABASE_URL: str = ""
+    # Pooler connection (for FastAPI runtime — PgBouncer, many short-lived connections):
+    DATABASE_URL_POOLER: str = ""
 
     # Supabase
     SUPABASE_URL: str = ""

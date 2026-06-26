@@ -1,12 +1,27 @@
+import { useEffect } from 'react'
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
+import { useCompanyStore } from '@/stores/companyStore'
 
 export default function ProtectedRoute() {
   const { session, loading, initialized } = useAuthStore()
+  const companies = useCompanyStore((s) => s.companies)
+  const loaded = useCompanyStore((s) => s.loaded)
+  const loadCompanies = useCompanyStore((s) => s.loadCompanies)
   const location = useLocation()
+  const ONBOARDING_PATH = '/onboarding'
 
-  // Show loading spinner while checking auth state
-  if (loading || !initialized) {
+  // Fetch companies once auth is ready
+  useEffect(() => {
+    if (session?.access_token && !loaded) {
+      loadCompanies()
+    }
+  }, [session?.access_token, loaded, loadCompanies])
+
+  // Wait for auth + companies to load
+  const waiting = loading || !initialized || (!!session?.access_token && !loaded)
+
+  if (waiting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
@@ -17,11 +32,19 @@ export default function ProtectedRoute() {
     )
   }
 
-  // Redirect to login if not authenticated
   if (!session?.access_token) {
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
-  // Render child routes
+  const isOnOnboarding = location.pathname === ONBOARDING_PATH
+  const hasCompany = companies.length > 0
+
+  if (!hasCompany && !isOnOnboarding) {
+    return <Navigate to={ONBOARDING_PATH} replace />
+  }
+  if (hasCompany && isOnOnboarding) {
+    return <Navigate to="/dashboard" replace />
+  }
+
   return <Outlet />
 }
