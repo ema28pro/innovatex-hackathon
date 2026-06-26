@@ -225,7 +225,7 @@ class AIService(Protocol):
 | **Bloque 3** | Gobernanza | 24% |
 | **TOTAL** | **Evaluación Integral** | **100%** |
 
-##Bloque 1: Política de Datos Personales (Peso Total: 40%)
+## Bloque 1: Política de Datos Personales (Peso Total: 40%)
 
 Este bloque verifica la existencia, accesibilidad, calidad y el contenido mínimo legal de la política de tratamiento de datos personales.
 
@@ -271,7 +271,7 @@ Este bloque verifica la existencia, accesibilidad, calidad y el contenido mínim
     * [ ] **Parcial (70%)**: Indica un canal de contacto (ej. un correo electrónico institucional genérico), pero no define el procedimiento interno, los requisitos del mensaje ni los tiempos de respuesta. (7.0 puntos)
     * [ ] **Total (100%)**: Define canales específicos y gratuitos (correo exclusivo, formularios), junto con un procedimiento claro, los requisitos de la solicitud y los tiempos de respuesta estipulados por ley. (10.0 puntos)
 
-##Bloque 2: Privacidad desde el Diseño (Peso Total: 36%)
+## Bloque 2: Privacidad desde el Diseño (Peso Total: 36%)
 
 Evalúa si la empresa incorpora de forma proactiva y por defecto principios y técnicas de ingeniería de privacidad desde las etapas tempranas de sus proyectos y sistemas.
 
