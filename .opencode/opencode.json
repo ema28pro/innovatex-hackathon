@@ -1,0 +1,128 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "code-reviewer": {
+      "description": "Reviews code for best practices and potential issues",
+      "mode": "subagent",
+      "model": "opencode-go/glm-5.1",
+      "prompt": "{file:prompts/code-reviewer.txt}",
+      "tools": {
+        "write": false,
+        "edit": false
+      }
+    },
+    "architect": {
+        "description": "Designs the overall architecture of the application",
+        "mode": "subagent",
+        "model": "opencode-go/glm-5.1",
+        "prompt": "{file:prompts/architect.txt}",
+        "tools": {
+          "write": false,
+          "edit": false
+        }
+    },
+    "error-build-fixer": {
+        "description": "Handles build errors and provides fixes. Use when there are build errors in the project.",
+        "mode": "subagent",
+        "model": "opencode-go/glm-5.1",
+        "prompt": "{file:prompts/error-builder.txt}",
+        "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+        }
+    },
+
+    "security-auditor": {
+        "description": "Audits code for security vulnerabilities and provides recommendations. Use when there is user input, sensitive data handling, or authentication/authorization logic in the project.",
+        "mode": "subagent",
+        "model": "opencode-go/deepseek-v4-pro",
+        "prompt": "{file:prompts/security-auditor.txt}",
+        "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+        }
+
+      
+    },
+    "terraform-specialist": {
+        "description": "Creates and optimizes Terraform configurations. Use when there is infrastructure as code or cloud resource management in the project.",
+        "mode": "subagent",
+        "model": "opencode-go/deepseek-v4-pro",
+        "prompt": "{file:prompts/terraform-specialist.txt}",
+        "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+        }
+    },
+
+    "tdd-developer": {
+        "description": "Writes tests before implementation code. Use when there is a need for high test coverage and maintainable code.",
+        "mode": "subagent",
+        "model": "opencode-go/glm-5.1",
+        "prompt": "{file:prompts/tdd-developer.txt}",
+        "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "bash": true,
+        "glob": true,
+        "grep": true
+        }
+    },
+    "aws-infra-engineer": {
+        "description": "Designs and implements AWS infrastructure. Use when the project involves deploying applications on AWS or managing AWS resources.",
+        "mode": "subagent",
+        "model": "opencode-go/deepseek-v4-pro",
+        "prompt": "{file:prompts/aws-infra-engineer.txt}",
+        "tools": {
+        "read": true,
+        "write": true,
+        "edit": true,
+        "bash": true
+        }
+  },
+  "pipeline-specialist" : {
+    "description": "Designs and optimizes CI/CD pipelines. Use when there is a need for automated testing, building, and deployment in the project.",
+    "mode": "subagent",
+    "model": "opencode-go/deepseek-v4-pro",
+    "prompt": "{file:prompts/pipeline-specialist.txt}",
+    "tools": {
+      "read": true,
+      "write": true,
+      "edit": true,
+      "bash": true
+    }
+  },
+
+  "zinior-engineer" : {
+    "description": "context manager. Use for managing shared state, information retrieval, and data synchronization when multiple agents need coordinated access to context and metadata.",
+    "mode": "subagent",
+    "model": "opencode-go/deepseek-v4-pro",
+    "prompt": "{file:prompts/context-manager.txt}",
+    "tools": {
+      "read": true,
+      "write": true,
+      "edit": true
+      }
+  },
+
+  "orchestrator-agent": {
+    "description": "Coordinates the activities of all subagents, manages task assignments, and ensures smooth collaboration. Use to oversee the entire development process and facilitate communication between agents.",
+    "mode": "primary",
+    "model": "opencode-go/deepseek-v4-pro",
+    "prompt": "{file:prompts/orchestrator.txt}",
+    "tools": {
+      "read": true,
+      "write": true,
+      "edit": true,
+      "bash": true
+    }
+  }
+}
+}
