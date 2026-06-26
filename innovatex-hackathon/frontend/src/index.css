@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-white text-slate-900 antialiased;
+  }
+
+  a {
+    @apply text-brand-700 hover:text-brand-900 transition-colors;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply w-full px-4 py-2.5 bg-brand-800 text-white rounded-md font-medium text-sm
+           hover:bg-brand-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+           transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full px-3 py-2 border border-slate-300 rounded-md text-sm
+           placeholder:text-slate-400
+           focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500
+           transition-colors;
+  }
+
+  .form-label {
+    @apply block text-sm font-medium text-slate-700 mb-1;
+  }
+
+  .error-text {
+    @apply text-sm text-red-600 mt-1;
+  }
+
+  .auth-card {
+    @apply w-full max-w-md bg-white rounded-lg border border-slate-200 shadow-sm;
+  }
+}

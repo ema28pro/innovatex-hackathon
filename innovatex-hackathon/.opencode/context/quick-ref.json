@@ -1,0 +1,42 @@
+{
+  "project": "Diagnóstico Ley 1581 de 2012",
+  "repo": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon",
+  "phase": "1/9 — Project Setup & Infrastructure",
+  "branch": "phase-1-project-setup-infra",
+
+  "stack": {
+    "backend": "FastAPI / Python 3.12 / UV / PostgreSQL 16 / SQLAlchemy / Alembic",
+    "frontend": "React 18 / Vite / Tailwind CSS / shadcn/ui / Zustand / React Router v6 / Axios",
+    "auth": "Supabase Auth (NOT OAuth2 — overrides PLAN.md)",
+    "infra": "Docker + docker-compose + Nginx"
+  },
+
+  "auth_note": "CRITICAL: Auth is Supabase, not Google/Microsoft OAuth2. Frontend routes: /login, /register. Backend validates Supabase JWT via FastAPI dependency. See global-context.json § known_discrepancies.",
+
+  "phase_1_deliverables": [
+    "docker-compose.yml + Dockerfiles + nginx.conf",
+    "FastAPI skeleton (main.py, config.py, database.py)",
+    "Alembic initialized",
+    "React + Vite + Tailwind + shadcn/ui scaffold",
+    "Supabase register + login + JWT validation + protected routes"
+  ],
+
+  "data_model_tables": 11,
+  "questionnaire_sections": 10,
+  "questionnaire_questions": 43,
+  "user_roles": ["admin", "auditor", "reader"],
+  "scoring_maturity_levels": ["No existe (0-20%)", "Inicial (21-40%)", "Parcialmente implementado (41-60%)", "Implementado (61-80%)", "Optimizado (81-100%)"],
+  "frontend_pages": 14,
+  "total_phases": 9,
+  "design": "Professional & Minimalist (Stripe/Linear aesthetic)",
+
+  "critical_conventions": [
+    "Conventional commits (feat:, fix:, chore:)",
+    "Backend path: backend/app/ | Frontend path: frontend/src/",
+    "Never edit committed Alembic revision",
+    "All DB queries must be tenant-scoped",
+    "RESTRICT deletes (preserve audit trail)",
+    "Every config setting → .env.example",
+    "pytest ≥ 70% coverage backend; vitest + Playwright frontend"
+  ]
+}

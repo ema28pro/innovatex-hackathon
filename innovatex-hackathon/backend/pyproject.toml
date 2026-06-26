@@ -1,0 +1,31 @@
+[project]
+name = "diagnostico-backend"
+version = "0.1.0"
+description = "Backend for Diagnóstico Ley 1581 de 2012"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg[binary]>=3.2.0",
+    "alembic>=1.13.0",
+    "pydantic-settings>=2.5.0",
+    "pyjwt[crypto]>=2.9.0",
+    "httpx>=0.28.0",
+    "python-multipart>=0.0.12",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

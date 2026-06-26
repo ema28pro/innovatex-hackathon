@@ -1,0 +1,29 @@
+{
+  "_description": "Index of all context artifacts available to agents. Query global-context.json for full details.",
+  "artifacts": {
+    "global-context.json": {
+      "path": ".opencode/context/global-context.json",
+      "description": "Complete project metadata: tech stack, data model, phases, security, conventions, routes, auth, scoring",
+      "size": "~11KB",
+      "updated": "2026-06-26T00:00:00Z"
+    },
+    "quick-ref.json": {
+      "path": ".opencode/context/quick-ref.json",
+      "description": "Single-page quick reference for agents needing fast answers",
+      "size": "~2KB",
+      "updated": "2026-06-26T00:00:00Z"
+    }
+  },
+  "query_patterns": {
+    "tech_stack": "Read global-context.json → $.tech_stack",
+    "auth_details": "Read global-context.json → $.auth_customizations + $.known_discrepancies",
+    "current_phase": "Read global-context.json → $.project.current_phase + $.phase_1_scope",
+    "routes": "Read global-context.json → $.frontend_routes",
+    "data_model": "Read global-context.json → $.data_model",
+    "scoring": "Read global-context.json → $.scoring_logic",
+    "questionnaire": "Read global-context.json → $.questionnaire_sections",
+    "security": "Read global-context.json → $.security_requirements",
+    "conventions": "Read global-context.json → $.cross_cutting_conventions",
+    "all_phases": "Read global-context.json → $.all_phases_summary"
+  }
+}
