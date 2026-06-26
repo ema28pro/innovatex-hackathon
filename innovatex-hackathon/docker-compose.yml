@@ -1,4 +1,3 @@
-version: "3.9"
 
 services:
   postgres:
@@ -39,7 +38,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     volumes:
       - ./backend:/app
     networks:
