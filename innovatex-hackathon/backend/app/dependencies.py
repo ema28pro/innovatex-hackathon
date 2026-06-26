@@ -1,6 +1,9 @@
 import jwt
 from dataclasses import dataclass
 from typing import Optional
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import ec
+from cryptography.hazmat.backends import default_backend
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.config import settings
@@ -16,13 +19,83 @@ class UserPayload:
     role: str
 
 
+def _get_jwks_public_key() -> str:
+    """
+    Build the ES256 public key from the Supabase JWKS.
+    
+    If SUPABASE_JWKS_URL is set, fetches the JWKS dynamically.
+    Otherwise falls back to HS256 with SUPABASE_JWT_SECRET.
+    """
+    if settings.SUPABASE_JWKS_URL:
+        # Dynamic JWKS: fetch and extract the public key
+        import httpx
+        try:
+            response = httpx.get(settings.SUPABASE_JWKS_URL, timeout=10)
+            response.raise_for_status()
+            jwks = response.json()
+            # Use the first key (Supabase typically has one)
+            key_data = jwks["keys"][0]
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to fetch JWKS for token verification",
+            )
+        return _build_ec_public_key(key_data)
+    elif settings.SUPABASE_JWT_SECRET:
+        # HS256 fallback — return None to signal HS256 mode
+        return None
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No JWKS URL or JWT secret configured",
+        )
+
+
+def _build_ec_public_key(jwk: dict) -> str:
+    """Convert an EC JWK to a PEM-encoded public key string."""
+    import base64
+
+    x_int = int.from_bytes(
+        base64.urlsafe_b64decode(jwk["x"] + "=="), "big"
+    )
+    y_int = int.from_bytes(
+        base64.urlsafe_b64decode(jwk["y"] + "=="), "big"
+    )
+
+    public_key = ec.EllipticCurvePublicNumbers(
+        x_int, y_int, ec.SECP256R1()
+    ).public_key(default_backend())
+
+    return public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo,
+    ).decode("utf-8")
+
+
 def verify_supabase_jwt(token: str) -> UserPayload:
-    """Verify a Supabase-issued JWT and return user payload."""
+    """Verify a Supabase-issued JWT and return user payload.
+
+    Supports both ES256 (JWKS) and HS256 (shared secret) depending on config.
+    """
     try:
+        # Try JWKS (ES256) first
+        if settings.SUPABASE_JWKS_URL:
+            public_key = _get_jwks_public_key()
+            algorithms = ["ES256"]
+            secret_or_key = public_key
+        elif settings.SUPABASE_JWT_SECRET:
+            algorithms = ["HS256"]
+            secret_or_key = settings.SUPABASE_JWT_SECRET
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="JWT verification not configured",
+            )
+
         payload = jwt.decode(
             token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
+            secret_or_key,
+            algorithms=algorithms,
             options={
                 "verify_aud": True,
                 "verify_exp": True,

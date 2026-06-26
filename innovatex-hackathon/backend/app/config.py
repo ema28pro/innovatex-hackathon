@@ -21,7 +21,8 @@ class Settings(BaseSettings):
 
     # Supabase
     SUPABASE_URL: str = ""
-    SUPABASE_JWT_SECRET: str = ""
+    SUPABASE_JWKS_URL: str = ""
+    SUPABASE_JWT_SECRET: str = ""  # used only if HS256; ignored for ES256 (JWKS)
     SUPABASE_ANON_KEY: str = ""
     SUPABASE_SERVICE_ROLE_KEY: str = ""
 
