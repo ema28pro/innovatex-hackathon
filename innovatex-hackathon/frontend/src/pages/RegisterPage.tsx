@@ -39,7 +39,13 @@ export default function RegisterPage() {
       })
 
       if (signUpError) {
-        setError(signUpError.message)
+        // Map known Supabase errors to user-friendly messages
+        const errorMap: Record<string, string> = {
+          'User already registered': 'Este email ya está registrado.',
+          'Password should be at least 6 characters': 'La contraseña debe tener al menos 6 caracteres.',
+          'Unable to validate email address: invalid format': 'El formato del email no es válido.',
+        }
+        setError(errorMap[signUpError.message] || 'Error al crear la cuenta. Intenta nuevamente.')
         return
       }
 

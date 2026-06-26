@@ -1,6 +1,7 @@
 FROM python:3.12-slim
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Pin UV version for reproducible builds
+COPY --from=ghcr.io/astral-sh/uv:0.5.29 /uv /usr/local/bin/uv
 
 RUN useradd --create-home appuser
 

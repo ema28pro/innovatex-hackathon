@@ -26,11 +26,12 @@ export default function LoginPage() {
       })
 
       if (signInError) {
-        if (signInError.message.includes('Invalid login')) {
-          setError('Credenciales inválidas. Verifica tu email y contraseña.')
-        } else {
-          setError(signInError.message)
+        // Map known Supabase errors to user-friendly messages
+        const errorMap: Record<string, string> = {
+          'Invalid login credentials': 'Credenciales inválidas. Verifica tu email y contraseña.',
+          'Email not confirmed': 'Por favor, confirma tu email antes de iniciar sesión.',
         }
+        setError(errorMap[signInError.message] || 'Error al iniciar sesión. Intenta nuevamente.')
         return
       }
 
