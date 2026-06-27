@@ -121,6 +121,7 @@ El frontend se ejecuta en `http://localhost:5173`.
 
 ### Backend
 
+<<<<<<< HEAD
 ```bash
 docker exec diagnostico-backend uv run alembic upgrade head
 docker exec diagnostico-backend uv run alembic revision --autogenerate -m "descripcion"
@@ -186,3 +187,10 @@ innovatex-hackathon/
 ## Licencia
 
 Proyecto desarrollado para el Innovatex Hackathon.
+=======
+1. Iniciar el backend desde backend.
+2. Iniciar el frontend desde frontend.
+3. Abrir la aplicación web y autenticarte.
+4. Crear o seleccionar una empresa.
+5. Ejecutar el diagnóstico y revisar resultados, reportes y plan de acción.
+>>>>>>> 4271cf4468575af4753014280dbc5ffbb89a8ce9
