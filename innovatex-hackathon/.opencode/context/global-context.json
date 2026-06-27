@@ -1,0 +1,457 @@
+{
+  "_metadata": {
+    "version": "1.0.0",
+    "created_at": "2026-06-26T00:00:00Z",
+    "updated_at": "2026-06-26T12:00:00Z",
+    "stored_by": "context-manager",
+    "schema_version": 1
+  },
+
+  "project": {
+    "name": "Diagnóstico Ley 1581 de 2012",
+    "slug": "diagnostico-ley-1581",
+    "description": "Compliance assessment platform for Colombian data protection law (Ley 1581 de 2012). Diagnoses organizational compliance through a structured AI-assisted questionnaire, calculates a compliance percentage, generates automatic recommendations, and tracks an action plan.",
+    "repo_path": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon",
+    "current_branch": "phase-1-project-setup-infra",
+    "current_phase": 1,
+    "next_phase": 2,
+    "next_phase_name": "Modelos + Onboarding",
+    "phase_name": "Project Setup & Infrastructure (COMPLETED)",
+    "language": "es-CO",
+    "target_audience": "Colombian organizations requiring Ley 1581 compliance"
+  },
+
+  "tech_stack": {
+    "backend": {
+      "framework": "FastAPI",
+      "language": "Python 3.12",
+      "package_manager": "UV",
+      "database": "PostgreSQL 16 (Supabase managed — project asgofjauortyigsoliii)",
+      "db_driver": "psycopg[binary]",
+      "orm": "SQLAlchemy 2.0",
+      "migrations": "Alembic",
+      "auth_provider": "Supabase Auth (NOT OAuth2 — this overrides original PLAN.md OAuth2 design) + Supabase managed PostgreSQL (Path B)",
+      "db_connection": {
+        "direct": "postgresql+psycopg://postgres:***@db.asgofjauortyigsoliii.supabase.co:5432/postgres (migrations/DDL)",
+        "pooler": "postgresql+psycopg://postgres.asgofjauortyigsoliii:***@aws-0-us-east-1.pooler.supabase.co:6543/postgres (app runtime)"
+      },
+      "dependencies": [
+        "fastapi", "uvicorn[standard]", "sqlalchemy", "psycopg[binary]",
+        "alembic", "pydantic-settings", "python-jose", "passlib",
+        "httpx", "python-multipart", "supabase"
+      ],
+      "settings_library": "pydantic-settings",
+      "server": "uvicorn"
+    },
+    "frontend": {
+      "framework": "React 18",
+      "bundler": "Vite",
+      "styling": "Tailwind CSS",
+      "ui_library": "shadcn/ui",
+      "routing": "React Router v6",
+      "state_management": "Zustand",
+      "data_fetching": "@tanstack/react-query",
+      "charts": "recharts",
+      "http_client": "Axios",
+      "auth_library": "@supabase/supabase-js",
+      "component_list": ["button", "input", "dialog", "card", "toast", "skeleton"]
+    },
+    "infrastructure": {
+      "containerization": "Docker + docker-compose",
+      "reverse_proxy": "Nginx",
+      "services": ["backend", "frontend", "nginx"],
+      "_note": "PostgreSQL service REMOVED from docker-compose — Supabase provides managed PostgreSQL (Path B architecture)",
+      "project_root": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon"
+    },
+    "ai_integration": {
+      "provider_model": "Agnostic layer (Protocol-based, hot-swappable)",
+      "providers": ["OpenAI", "Anthropic", "Gemini"],
+      "config_key": "AI_PROVIDER",
+      "capabilities": [
+        "explain_question (real-time per-question legal explanation)",
+        "suggest_answer (context-aware answer suggestion)",
+        "generate_recommendations (post-assessment prioritized recommendations)",
+        "generate_action_plan (action items from recommendations)"
+      ]
+    },
+    "reports": {
+      "pdf_library": "reportlab",
+      "excel_library": "openpyxl"
+    }
+  },
+
+  "auth_customizations": {
+    "_note": "THIS OVERRIDES THE ORIGINAL PLAN.md OAuth2 DESIGN. No Google/Microsoft OAuth. Pure Supabase Auth.",
+    "provider": "Supabase",
+    "frontend_routes": ["/login", "/register"],
+    "redirect_after_auth": "React Router navigation (not server-side redirect)",
+    "jwt_validation": "FastAPI dependency validates Supabase JWT on backend",
+    "jwt_storage": "access + refresh tokens in frontend (stateless backend)",
+    "token_handling": "Axios interceptor with refresh logic"
+  },
+
+  "design_requirements": {
+    "style": "Professional & Minimalist",
+    "inspiration": "Stripe/Linear-level minimalism",
+    "font": "system font stack",
+    "color_scheme": "professional corporate palette",
+    "accessibility_target": "WCAG AA minimum, Lighthouse ≥ 90 mobile",
+    "responsive_breakpoints": [360, 768, 1280],
+    "components_standard": "shadcn/ui (Tailwind-based, radix primitives)"
+  },
+
+  "phase_1_scope": {
+    "objective": "Fully containerized, runnable skeleton (backend + frontend + DB + reverse proxy) with Supabase login working end-to-end.",
+    "dependencies": [],
+    "estimated_effort": "Large",
+    "deliverables": [
+      {
+        "id": "docker-infra",
+        "description": "docker-compose.yml with services: postgres, backend, frontend, nginx",
+        "files": ["docker-compose.yml", "backend/Dockerfile", "frontend/Dockerfile", "nginx/nginx.conf"],
+        "status": "completed"
+      },
+      {
+        "id": "backend-skeleton",
+        "description": "FastAPI app with lifespan, CORS, router stubs, config, database session",
+        "files": ["backend/app/main.py", "backend/app/config.py", "backend/app/database.py", "backend/requirements.txt"],
+        "status": "completed"
+      },
+      {
+        "id": "alembic-init",
+        "description": "Alembic initialized with autogenerate targeting Base.metadata",
+        "files": ["backend/alembic.ini", "backend/alembic/env.py", "backend/alembic/versions/"],
+        "status": "completed"
+      },
+      {
+        "id": "frontend-skeleton",
+        "description": "React + Vite scaffold with Tailwind, shadcn/ui, routing, http client",
+        "files": [
+          "frontend/package.json", "frontend/vite.config.ts", "frontend/tsconfig.json",
+          "frontend/tailwind.config.ts", "frontend/index.html", "frontend/src/main.tsx",
+          "frontend/src/App.tsx", "frontend/src/components/ui/",
+          "frontend/src/api/client.ts", "frontend/src/stores/authStore.ts"
+        ],
+        "status": "completed"
+      },
+      {
+        "id": "supabase-auth",
+        "description": "Supabase Auth integration: register, login, JWT validation on backend, protected routes on frontend",
+        "files": [
+          "backend/app/services/auth_service.py",
+          "backend/app/middleware/auth_middleware.py",
+          "backend/app/routers/auth.py",
+          "frontend/src/pages/LoginPage.tsx",
+          "frontend/src/pages/RegisterPage.tsx",
+          "frontend/src/components/layout/ProtectedRoute.tsx"
+        ],
+        "status": "completed"
+      }
+    ],
+    "acceptance_criteria": [
+      "docker-compose up starts all four services; http://localhost renders LoginPage",
+      "Register + Login via Supabase returns a valid JWT pair stored in frontend",
+      "GET /api/health returns {\"status\":\"ok\"} through nginx",
+      "alembic upgrade head runs without error (empty schema)"
+    ]
+  },
+
+  "phase_1": {
+    "status": "completed",
+    "objectives_completed": 13,
+    "files_created": 60,
+    "commits": 2,
+    "security_audit": {
+      "score": "7/10 (post-fix, up from 5/10)",
+      "judgment": "PASS WITH OBSERVATIONS",
+      "critical_fixed": 3,
+      "high_fixed": 5,
+      "medium_open": 5,
+      "low_open": 4,
+      "open_items": [
+        "HTTPS/TLS not configured (requires certificates - document for production)",
+        "Missing uv.lock and package-lock.json (needs UV/npm available to generate)",
+        "No rate limiting on API endpoints",
+        "No app container healthchecks",
+        "No audit logging system"
+      ]
+    }
+  },
+
+  "questionnaire_sections": {
+    "total_sections": 10,
+    "total_questions": 43,
+    "sections": [
+      {
+        "id": 1,
+        "name": "Gobierno y Responsabilidad",
+        "order": 1,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 2,
+        "name": "Inventario y Bases de Datos",
+        "order": 2,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 3,
+        "name": "Autorización y Consentimiento",
+        "order": 3,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 4,
+        "name": "Política de Tratamiento",
+        "order": 4,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 5,
+        "name": "Derechos de los Titulares",
+        "order": 5,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 6,
+        "name": "Seguridad de la Información",
+        "order": 6,
+        "question_count": 5,
+        "is_optional": false
+      },
+      {
+        "id": 7,
+        "name": "Datos Sensibles y Menores",
+        "order": 7,
+        "question_count": 5,
+        "is_optional": false
+      },
+      {
+        "id": 8,
+        "name": "Terceros y Transferencias",
+        "order": 8,
+        "question_count": 4,
+        "is_optional": false
+      },
+      {
+        "id": 9,
+        "name": "Capacitación y Cultura",
+        "order": 9,
+        "question_count": 3,
+        "is_optional": false
+      },
+      {
+        "id": 10,
+        "name": "Cumplimiento y Evidencia",
+        "order": 10,
+        "question_count": 4,
+        "is_optional": false
+      }
+    ],
+    "answer_options": [
+      {"value": "yes", "label": "Sí", "score": 1.0},
+      {"value": "no", "label": "No", "score": 0.0},
+      {"value": "partial", "label": "Parcial", "score": 0.5},
+      {"value": "na", "label": "N/A", "score": "excluded_from_denominator"}
+    ]
+  },
+
+  "scoring_logic": {
+    "per_question": {
+      "yes": 1.0,
+      "partial": 0.5,
+      "no": 0.0,
+      "na": "excluded"
+    },
+    "section_score": "sum(answered_non_na_scores) / count(answered_non_na_questions)",
+    "global_score": "simple_average_across_all_sections (equal weight)",
+    "compliance_percentage": "global_score × 100",
+    "maturity_matrix": {
+      "0-20": {"label": "No existe", "min": 0, "max": 20},
+      "21-40": {"label": "Inicial", "min": 21, "max": 40},
+      "41-60": {"label": "Parcialmente implementado", "min": 41, "max": 60},
+      "61-80": {"label": "Implementado", "min": 61, "max": 80},
+      "81-100": {"label": "Optimizado", "min": 81, "max": 100}
+    },
+    "trigger": "computed on assessment completion (status=completed), not during in-progress"
+  },
+
+  "data_model": {
+    "tables": [
+      {
+        "name": "profiles",
+        "columns": "id (PK, UUID, FK→auth.users(id) ON DELETE RESTRICT), display_name, avatar_url, created_at, updated_at",
+        "notes": "Path B: FK directly to Supabase auth.users — NO shadow table. Stores app-level profile data not in auth.users."
+      },
+      {
+        "name": "companies",
+        "columns": "id (PK), name, nit (UQ), sector (ENUM), size (ENUM), contact_email, employee_count, created_at, updated_at",
+        "notes": "Multi-tenant root entity. sector_enum: publico/privado/mixto/ong/otro. size_enum: micro/pequena/mediana/grande."
+      },
+      {
+        "name": "company_members",
+        "columns": "id (PK), company_id (FK→companies RESTRICT), profile_id (FK→profiles RESTRICT), role (ENUM: admin/auditor/reader), created_at. UNIQUE(company_id, profile_id)",
+        "notes": "Tenant-role join table. Composite UNIQUE prevents duplicate memberships."
+      },
+      {
+        "name": "evaluations",
+        "columns": "id (PK), company_id (FK→companies RESTRICT), created_by (FK→profiles RESTRICT), status (ENUM: in_progress/completed), overall_score (NUMERIC(5,2)), finished_at (NULLABLE), created_at, updated_at",
+        "notes": "finished_at is NULL while in_progress; set only on completion. No DEFAULT now()."
+      },
+      {
+        "name": "answers",
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), question_id (FK→questions RESTRICT), response (ENUM: yes/no/partial/na), notes (TEXT NULLABLE). UNIQUE(evaluation_id, question_id)",
+        "notes": "Composite UNIQUE for upsert. response is ENUM NOT BOOLEAN — NA excluded from denominator."
+      },
+      {
+        "name": "sections",
+        "columns": "id (PK), name (VARCHAR), order (INT), is_optional (BOOLEAN DEFAULT false)",
+        "notes": "10 fixed sections seeded per PLAN.md questionnaire design"
+      },
+      {
+        "name": "questions",
+        "columns": "id (PK), section_id (FK→sections RESTRICT), text (TEXT NOT NULL), order (INT), legal_reference (TEXT), ai_explanation_prompt (TEXT)",
+        "notes": "Seeded per questionnaire design. Awaiting resolution of PLAN-vs-frontend conflict."
+      },
+      {
+        "name": "scores",
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), section_id (FK→sections RESTRICT), score (NUMERIC(5,2)), max_score (NUMERIC(5,2)), percentage (NUMERIC(5,2))",
+        "notes": "NUMERIC(5,2) — NOT DOUBLE PRECISION. Recomputed on evaluation completion."
+      },
+      {
+        "name": "recommendations",
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), section_id (FK→sections RESTRICT), ai_generated_text (TEXT NOT NULL), priority (ENUM: high/medium/low)",
+        "notes": "AI-generated post-assessment recommendations"
+      },
+      {
+        "name": "action_items",
+        "columns": "id (PK), recommendation_id (FK→recommendations RESTRICT), evaluation_id (FK→evaluations RESTRICT), status (ENUM: pending/in_progress/completed), assigned_to (FK→profiles RESTRICT), notes (TEXT), created_at, updated_at",
+        "notes": "No due dates in MVP"
+      },
+      {
+        "name": "share_links",
+        "columns": "id (PK), evaluation_id (FK→evaluations RESTRICT), token (UUID UQ NOT NULL), expires_at (TIMESTAMPTZ NOT NULL), created_by (FK→profiles RESTRICT), created_at",
+        "notes": "Public share links for assessment results"
+      }
+    ],
+    "total_tables": 11,
+    "indexes": ["ix_share_token (UNIQUE)", "FK indexes on ALL foreign key columns (per audit DM-10)"],
+    "delete_strategy": "ALL FKs use ON DELETE RESTRICT — preserve audit trails, return 409 on conflict (per audit DM-01)"
+  },
+
+  "frontend_routes": [
+    {"path": "/login", "component": "LoginPage", "auth_required": false, "phase": 1},
+    {"path": "/register", "component": "RegisterPage", "auth_required": false, "phase": 1},
+    {"path": "/dashboard", "component": "DashboardPage", "auth_required": true, "phase": 8},
+    {"path": "/company/profile", "component": "CompanyProfilePage", "auth_required": true, "phase": 2},
+    {"path": "/company/switch", "component": "CompanySwitchPage", "auth_required": true, "phase": 2},
+    {"path": "/assessment/new", "component": "NewAssessmentPage", "auth_required": true, "phase": 3},
+    {"path": "/assessment/:id", "component": "AssessmentPage", "auth_required": true, "phase": 3},
+    {"path": "/assessment/:id/results", "component": "ResultsPage", "auth_required": true, "phase": 4},
+    {"path": "/assessment/:id/recommendations", "component": "RecommendationsPage", "auth_required": true, "phase": 5},
+    {"path": "/assessment/:id/action-plan", "component": "ActionPlanPage", "auth_required": true, "phase": 7},
+    {"path": "/assessment/:id/export", "component": "ExportPage", "auth_required": true, "phase": 6},
+    {"path": "/admin/users", "component": "AdminUsersPage", "auth_required": true, "phase": 2},
+    {"path": "/history", "component": "HistoryPage", "auth_required": true, "phase": 8},
+    {"path": "/share/:token", "component": "SharedResultsPage", "auth_required": false, "phase": 6}
+  ],
+
+  "user_roles": {
+    "admin": {
+      "permissions": ["manage_company", "manage_users", "create_assessments", "view_reports", "manage_action_plan", "export_data", "create_share_links"]
+    },
+    "auditor": {
+      "permissions": ["answer_questionnaire", "view_reports", "manage_action_plan", "export_data", "create_share_links"]
+    },
+    "reader": {
+      "permissions": ["view_reports", "view_action_plan"]
+    }
+  },
+
+  "security_requirements": {
+    "jwt": {
+      "type": "Supabase JWT",
+      "storage": "access + refresh in memory/httpOnly",
+      "expiration": "short-lived access, longer refresh",
+      "interceptor": "Axios auto-refresh on 401"
+    },
+    "transport": "HTTPS mandatory (nginx 80→443 redirect)",
+    "cors": "Restricted to configured domains (no wildcard in prod)",
+    "rate_limiting": "slowapi middleware, strict on auth and AI routes",
+    "tenancy": "Middleware resolves company_id from JWT; all queries scoped via TenantQuery helper; cross-tenant access returns 404 (not 403 to prevent enumeration)",
+    "input_validation": "Pydantic Field constraints on all schemas (length, enums, regex for NIT/email)",
+    "sanitization": "No dangerouslySetInnerHTML on user data; SSRF rejected on user-supplied URLs",
+    "secrets": "All via .env / pydantic-settings; .env.example files provided; no secrets in repo",
+    "headers": "Security headers in nginx.conf (HSTS, X-Content-Type, X-Frame, CSP)",
+    "owasp_target": "No High findings on ZAP/Burp scan"
+  },
+
+  "all_phases_summary": [
+    {"phase": 1, "name": "Setup & Infra", "effort": "Large", "demo": "Supabase auth working in Docker"},
+    {"phase": 2, "name": "Models + Base API", "effort": "Large", "demo": "Multi-tenant CRUD + admin users UI"},
+    {"phase": 3, "name": "Questionnaire", "effort": "Large", "demo": "Full 43-question flow with auto-save"},
+    {"phase": 4, "name": "Scoring", "effort": "Medium", "demo": "Maturity matrix + results page"},
+    {"phase": 5, "name": "AI Integration", "effort": "Large", "demo": "Explain/Suggest + final recommendations"},
+    {"phase": 6, "name": "Reports", "effort": "Medium", "demo": "PDF + Excel + share links"},
+    {"phase": 7, "name": "Action Plan", "effort": "Small", "demo": "Trackable checklist with assignment"},
+    {"phase": 8, "name": "Dashboard", "effort": "Medium", "demo": "Charts, trend, history"},
+    {"phase": 9, "name": "Security & Polish", "effort": "Medium", "demo": "OWASP-clean, responsive, a11y"}
+  ],
+
+  "cross_cutting_conventions": {
+    "commit_style": "conventional commits (feat(scope):, fix(scope):, chore(scope):)",
+    "backend_testing": "pytest ≥ 70% coverage",
+    "frontend_testing": "vitest + React Testing Library for components/hooks; Playwright for smoke flows",
+    "migrations": "never edit committed Alembic revision; always new revision",
+    "tenancy_rule": "every SQL query goes through TenantQuery/scoped session",
+    "env_rule": "every new setting in config.py must appear in .env.example",
+    "api_versioning": "all routers under /api (no /v1 for MVP)",
+    "documentation": "each phase ends with updated README + OpenAPI auto-diff",
+    "backend_path_prefix": "backend/app/",
+    "frontend_path_prefix": "frontend/src/"
+  },
+
+  "known_discrepancies": [
+    {
+      "topic": "Authentication",
+      "plan_documentation": "OAuth2 via Google + Microsoft using authlib",
+      "current_decision": "Supabase Auth (register, login, JWT validation)",
+      "source": "User-provided metadata override",
+      "impact": "No OAuth flow needed; Supabase handles auth; backend validates Supabase JWT"
+    },
+    {
+      "topic": "Package manager",
+      "plan_documentation": "requirements.txt (pip)",
+      "current_decision": "UV (modern Python package manager)",
+      "source": "User-provided metadata override",
+      "impact": "Dependencies managed via uv instead of pip; may use pyproject.toml instead of requirements.txt"
+    },
+    {
+      "topic": "Database infrastructure (Path B)",
+      "plan_documentation": "Docker PostgreSQL service (postgres:16-alpine in docker-compose.yml)",
+      "current_decision": "Supabase managed PostgreSQL (project asgofjauortyigsoliii) — NO local Docker PostgreSQL",
+      "source": "User-provided architectural decision (Path B)",
+      "impact": "Docker PostgreSQL service removed. profiles FK directly to auth.users(id). Connection strings point to Supabase PostgreSQL (direct for migrations, pooler for app)."
+    },
+    {
+      "topic": "User table design",
+      "plan_documentation": "Shadow `users` table mirroring auth users",
+      "current_decision": "`profiles` table with FK directly to `auth.users(id)` — NO shadow table",
+      "source": "Path B architectural decision",
+      "impact": "Simpler schema, no sync needed between auth.users and a shadow table. profiles stores only app-level extensions (display_name, avatar_url, preferences)."
+    },
+    {
+      "topic": "Questionnaire design — UNRESOLVED",
+      "plan_documentation": "PLAN.md specifies 10 sections, 43 questions, answer scale yes/no/partial/na",
+      "current_decision": "Frontend code currently implements 3 blocks (politica, diseno, gobernanza), 11 questions, answer scale 0/35/70/100",
+      "source": "Code-vs-documentation audit",
+      "impact": "MUST be resolved before Phase 3 (Questionnaire). Affects: questions table schema, answer ENUM values, scoring logic, seed data, frontend questionnaire components. Flagged for user decision.",
+      "_status": "UNRESOLVED — user must decide before implementing"
+    }
+  ]
+}

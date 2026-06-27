@@ -1,0 +1,138 @@
+import { useState, FormEvent, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { supabase } from '@/lib/supabase'
+
+export default function LoginPage() {
+  const navigate = useNavigate()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  // Auto-redirect if already authenticated
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.access_token) {
+        navigate('/dashboard', { replace: true })
+      } else {
+        setChecking(false)
+      }
+    })
+  }, [navigate])
+
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-slate-300 border-t-brand-800 rounded-full animate-spin" />
+          <p className="text-sm text-slate-500">Verificando sesión...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError(null)
+
+    if (!email || !password) {
+      setError('Todos los campos son obligatorios')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (signInError) {
+        // Map known Supabase errors to user-friendly messages
+        const errorMap: Record<string, string> = {
+          'Invalid login credentials': 'Credenciales inválidas. Verifica tu email y contraseña.',
+          'Email not confirmed': 'Por favor, confirma tu email antes de iniciar sesión.',
+        }
+        setError(errorMap[signInError.message] || 'Error al iniciar sesión. Intenta nuevamente.')
+        return
+      }
+
+      // Redirect to dashboard on success
+      navigate('/dashboard', { replace: true })
+    } catch (err) {
+      setError('Error de conexión. Intenta nuevamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="auth-card p-8">
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            Diagnóstico Ley 1581
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Inicia sesión para continuar
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label htmlFor="email" className="form-label">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="input-field"
+              placeholder="tu@empresa.com"
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="form-label">
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="input-field"
+              placeholder="Tu contraseña"
+              autoComplete="current-password"
+              required
+            />
+          </div>
+
+          {error && <p className="error-text">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="btn-primary"
+          >
+            {loading ? 'Iniciando sesión...' : 'Iniciar sesión'}
+          </button>
+        </form>
+
+        {/* Register link */}
+        <p className="text-sm text-center text-slate-500 mt-6">
+          ¿No tienes cuenta?{' '}
+          <Link to="/register" className="text-brand-700 hover:text-brand-900 font-medium">
+            Regístrate
+          </Link>
+        </p>
+      </div>
+    </div>
+  )
+}

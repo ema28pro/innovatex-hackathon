@@ -1,0 +1,63 @@
+{
+  "project": "Diagnóstico Ley 1581 de 2012",
+  "repo": "/mnt/c/Users/sotov/OneDrive/Escritorio/reto_hackaton/innovatex-hackathon",
+  "phase": "2/9 — Modelos + Onboarding [PENDING START]",
+  "branch": "phase-1-project-setup-infra",
+  "phase_1_completed": true,
+  "phase_1_security_score": "7/10 (PASS WITH OBSERVATIONS)",
+  "phase_2_status": "NOT STARTED — context stored, awaiting orchestration",
+
+  "stack": {
+    "backend": "FastAPI / Python 3.12 / UV / PostgreSQL 16 (Supabase managed) / SQLAlchemy / Alembic",
+    "frontend": "React 18 / Vite / Tailwind CSS / shadcn/ui / Zustand / React Router v6 / Axios",
+    "auth": "Supabase Auth (NOT OAuth2 — overrides PLAN.md)",
+    "infra": "Docker + docker-compose + Nginx (NO local PostgreSQL — removed per Path B)"
+  },
+
+  "architecture_note": "CRITICAL — Path B: Supabase project asgofjauortyigsoliii provides BOTH Auth + PostgreSQL. NO Docker PostgreSQL. profiles table FKs directly to auth.users(id). No shadow auth_users table. See phase-2-context.json § architectural_decision_path_b.",
+  "auth_note": "CRITICAL: Auth is Supabase, not Google/Microsoft OAuth2. Frontend routes: /login, /register. Backend validates Supabase JWT via FastAPI dependency.",
+  "unresolved_conflict": "QUESTIONNAIRE: PLAN.md (10 sections, 43 questions, yes/no/partial/na) vs Frontend code (3 blocks, 11 questions, scale 0/35/70/100). MUST ask user before implementing. See phase-2-context.json § plan_vs_frontend_conflict.",
+
+  "phase_1_deliverables": [
+    "docker-compose.yml + Dockerfiles + nginx.conf",
+    "FastAPI skeleton (main.py, config.py, database.py)",
+    "Alembic initialized",
+    "React + Vite + Tailwind + shadcn/ui scaffold",
+    "Supabase register + login + JWT validation + protected routes"
+  ],
+
+  "phase_2_deliverables": [
+    "SQLAlchemy models: profiles, companies, company_members, + audit tables",
+    "Alembic migration with ENUMs, FKs (RESTRICT), composite UNIQUEs, indexes",
+    "CRUD /api/companies (tenant-scoped)",
+    "CRUD /api/companies/:id/members (role management)",
+    "Frontend forced onboarding flow (company creation, selection)"
+  ],
+
+  "data_model_tables": 11,
+  "questionnaire_sections": 10,
+  "questionnaire_questions": 43,
+  "user_roles": ["admin", "auditor", "reader"],
+  "scoring_maturity_levels": ["No existe (0-20%)", "Inicial (21-40%)", "Parcialmente implementado (41-60%)", "Implementado (61-80%)", "Optimizado (81-100%)"],
+  "frontend_pages": 14,
+  "total_phases": 9,
+  "design": "Professional & Minimalist (Stripe/Linear aesthetic)",
+
+  "critical_conventions": [
+    "Conventional commits (feat:, fix:, chore:)",
+    "Backend path: backend/app/ | Frontend path: frontend/src/",
+    "Never edit committed Alembic revision",
+    "All DB queries must be tenant-scoped",
+    "RESTRICT deletes (preserve audit trail)",
+    "Every config setting → .env.example",
+    "pytest ≥ 70% coverage backend; vitest + Playwright frontend",
+    "Path B: profiles FK → auth.users(id), no shadow table",
+    "Path B: Use pooler URL for app, direct URL for migrations",
+    "Path B: Supabase project asgofjauortyigsoliii"
+  ],
+
+  "connection_strings": {
+    "direct": "postgresql+psycopg://postgres:evaluxinnovatex@db.asgofjauortyigsoliii.supabase.co:5432/postgres (migrations)",
+    "pooler": "postgresql+psycopg://postgres.asgofjauortyigsoliii:evaluxinnovatex@aws-0-us-east-1.pooler.supabase.co:6543/postgres (app)"
+  }
+}

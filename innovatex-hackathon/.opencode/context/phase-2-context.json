@@ -1,0 +1,249 @@
+{
+  "_metadata": {
+    "version": "1.0.0",
+    "created_at": "2026-06-26T12:30:00Z",
+    "stored_by": "context-manager",
+    "description": "Phase 2 planning context — Models + Onboarding. Supabase PostgreSQL (Path B), multi-tenant schema, CRUD empresas, forced onboarding.",
+    "schema_version": 1
+  },
+
+  "phase_2_scope": {
+    "phase": 2,
+    "name": "Modelos + Onboarding",
+    "effort": "Large",
+    "objective": "Database models, Alembic migrations, multi-tenant companies CRUD API, user-company role associations (FK to auth.users), forced onboarding flow on frontend.",
+    "dependencies": ["phase_1"],
+    "deliverables": [
+      {
+        "id": "phase-2-models",
+        "description": "SQLAlchemy 2.0 declarative models: profiles, companies, company_members, plus audit-phase tables (evaluations, answers, sections, questions, scores, recommendations, action_items, share_links)",
+        "status": "pending"
+      },
+      {
+        "id": "phase-2-migrations",
+        "description": "Alembic autogenerate migration creating all tables with correct FKs, constraints, and indexes",
+        "status": "pending"
+      },
+      {
+        "id": "phase-2-companies-crud",
+        "description": "FastAPI CRUD for /api/companies (POST, GET, PATCH, DELETE — RESTRICT delete) with tenant-scoped queries",
+        "status": "pending"
+      },
+      {
+        "id": "phase-2-company-members-api",
+        "description": "API endpoints for managing company members (user-company role associations)",
+        "status": "pending"
+      },
+      {
+        "id": "phase-2-onboarding-ui",
+        "description": "Frontend: forced onboarding flow after login if user has no company; company creation form; company selection; role management UI",
+        "status": "pending"
+      }
+    ],
+    "demo_goal": "Multi-tenant CRUD + admin users UI",
+    "acceptance_criteria": [
+      "alembic upgrade head creates all tables with correct schema",
+      "POST /api/companies creates a company and owner role for the authenticated user",
+      "GET /api/companies returns only companies the user belongs to",
+      "PATCH /api/companies/:id updates company fields (tenancy-enforced)",
+      "DELETE /api/companies/:id returns 409 (RESTRICT) if dependencies exist",
+      "Frontend onboarding: new user sees company creation form immediately after login; existing user sees dashboard"
+    ]
+  },
+
+  "architectural_decision_path_b": {
+    "title": "ARCHITECTURAL DECISION: Path B — Supabase Managed PostgreSQL",
+    "decision_date": "2026-06-26",
+    "status": "APPROVED",
+    "summary": "NO local Docker PostgreSQL. Supabase project `asgofjauortyigsoliii` provides BOTH Auth + PostgreSQL. The `profiles` table FKs directly to `auth.users(id)` — no shadow `auth_users` table needed.",
+
+    "supabase_project": {
+      "project_id": "asgofjauortyigsoliii",
+      "supabase_url": "https://asgofjauortyigsoliii.supabase.co",
+      "supabase_anon_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzZ29mamF1b3J0eWlnc29saWlpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0ODY5MzEsImV4cCI6MjA5ODA2MjkzMX0.vzLCnr872iiKFhaWV9by4PPHLfGTeRRQ6aEoECuAZaU",
+      "_security_note": "ANON_KEY is safe for context store — it is the public anon key used in frontend. SERVICE_ROLE_KEY is never stored here."
+    },
+
+    "connection_strings": {
+      "direct": "postgresql+psycopg://postgres:evaluxinnovatex@db.asgofjauortyigsoliii.supabase.co:5432/postgres",
+      "pooler": "postgresql+psycopg://postgres.asgofjauortyigsoliii:evaluxinnovatex@aws-0-us-east-1.pooler.supabase.co:6543/postgres",
+      "direct_use": "Migrations, DDL, admin operations",
+      "pooler_use": "Application runtime — many short-lived connections"
+    },
+
+    "auth_schema_relationship": {
+      "mechanism": "FK from public.profiles.id → auth.users.id (NO shadow table)",
+      "profiles_table_notes": "profiles is the app-level extension of auth.users. It stores display_name, avatar_url, preferences — anything NOT provided by Supabase Auth's built-in users table.",
+      "migration_notes": "CREATE TABLE profiles (id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE RESTRICT, ...)"
+    },
+
+    "docker_changes": {
+      "removed": "docker-compose.yml postgres service (no longer needed)",
+      "kept": "backend, frontend, nginx services"
+    }
+  },
+
+  "current_state": {
+    "phase_1": "COMPLETED",
+    "phase_2": "NOT STARTED",
+    "backend_models": "EMPTY — backend/app/models/ contains only .gitkeep",
+    "alembic_versions": "EMPTY — backend/alembic/versions/ contains only .gitkeep",
+    "frontend_auth": "Working — Zustand + localStorage for mock data, Supabase login/register functional",
+    "package_manager": "UV (pyproject.toml)",
+    "orm": "SQLAlchemy 2.0 + Alembic",
+    "python": "3.12",
+    "backend_path": "backend/app/",
+    "frontend_path": "frontend/src/"
+  },
+
+  "data_model_changes_from_audit": {
+    "_source": "Previous agent audit (db-designer) — design decisions that MUST be followed",
+    "decisions": [
+      {
+        "id": "DM-01",
+        "rule": "ALL foreign keys use ON DELETE RESTRICT",
+        "rationale": "Preserve audit trails; never cascade deletes"
+      },
+      {
+        "id": "DM-02",
+        "rule": "answers.response must be ENUM (yes/no/partial/na), NOT BOOLEAN",
+        "rationale": "NA requires exclusion from denominator; partial requires fractional scoring"
+      },
+      {
+        "id": "DM-03",
+        "rule": "evaluations.finished_at must be NULLABLE (no DEFAULT now())",
+        "rationale": "NULL means in-progress; only set when status transitions to completed"
+      },
+      {
+        "id": "DM-04",
+        "rule": "Add missing tables: sections, scores, recommendations, action_items, share_links",
+        "rationale": "These were in PLAN.md data model but missing from initial schema consideration"
+      },
+      {
+        "id": "DM-05",
+        "rule": "All columns must have NOT NULL where appropriate",
+        "rationale": "Data integrity — nullable only when genuinely optional"
+      },
+      {
+        "id": "DM-06",
+        "rule": "Use NUMERIC(5,2) NOT DOUBLE PRECISION for scores",
+        "rationale": "Exact decimal arithmetic — no floating-point rounding issues in compliance percentages"
+      },
+      {
+        "id": "DM-07",
+        "rule": "ENUM types for role (admin/auditor/reader), status (in_progress/completed), sector, size",
+        "rationale": "Native PostgreSQL enums for type safety and constraint enforcement"
+      },
+      {
+        "id": "DM-08",
+        "rule": "Composite UNIQUE on company_members(company_id, profile_id) and answers(evaluation_id, question_id)",
+        "rationale": "No duplicate memberships; upsert answers by (evaluation, question)"
+      },
+      {
+        "id": "DM-09",
+        "rule": "Add updated_at to ALL mutable tables",
+        "rationale": "Audit trail and stale-data detection"
+      },
+      {
+        "id": "DM-10",
+        "rule": "Add indexes on ALL foreign key columns",
+        "rationale": "Query performance for joins and lookups"
+      }
+    ]
+  },
+
+  "plan_vs_frontend_conflict": {
+    "_status": "UNRESOLVED — MUST ASK USER BEFORE IMPLEMENTING QUESTIONNAIRE",
+    "plan_doc": {
+      "source": "PLAN.md",
+      "sections": 10,
+      "total_questions": 43,
+      "answer_scale": "yes/no/partial/na",
+      "scoring": "yes=1.0, partial=0.5, no=0.0, na=excluded"
+    },
+    "frontend_code": {
+      "source": "frontend/src/ (current implementation)",
+      "blocks": 3,
+      "block_names": ["politica", "diseno", "gobernanza"],
+      "total_questions": 11,
+      "answer_scale": "0/35/70/100 (slider/radio scale)",
+      "scoring": "scale-based numeric"
+    },
+    "resolution_required": "BEFORE implementing models, seed data, questionnaire API, or assessment flow. This affects: questions table schema, answers.response ENUM values, scoring logic, frontend questionnaire components."
+  },
+
+  "table_schema_phase2": {
+    "_note": "Tables needed for Phase 2. Focus on companies + profiles + membership. Other tables (sections, questions, etc.) defined but may be populated in Phase 3.",
+    "profiles": {
+      "columns": [
+        {"name": "id", "type": "UUID", "constraints": "PK, REFERENCES auth.users(id) ON DELETE RESTRICT"},
+        {"name": "display_name", "type": "VARCHAR(255)", "constraints": "NOT NULL"},
+        {"name": "avatar_url", "type": "TEXT", "constraints": "NULLABLE"},
+        {"name": "created_at", "type": "TIMESTAMPTZ", "constraints": "NOT NULL, DEFAULT now()"},
+        {"name": "updated_at", "type": "TIMESTAMPTZ", "constraints": "NOT NULL, DEFAULT now()"}
+      ]
+    },
+    "companies": {
+      "columns": [
+        {"name": "id", "type": "UUID", "constraints": "PK, DEFAULT gen_random_uuid()"},
+        {"name": "name", "type": "VARCHAR(255)", "constraints": "NOT NULL"},
+        {"name": "nit", "type": "VARCHAR(20)", "constraints": "NOT NULL, UNIQUE"},
+        {"name": "sector", "type": "ENUM sector_enum", "constraints": "NOT NULL"},
+        {"name": "size", "type": "ENUM size_enum", "constraints": "NOT NULL"},
+        {"name": "contact_email", "type": "VARCHAR(255)", "constraints": "NOT NULL"},
+        {"name": "employee_count", "type": "INTEGER", "constraints": "NULLABLE"},
+        {"name": "created_at", "type": "TIMESTAMPTZ", "constraints": "NOT NULL, DEFAULT now()"},
+        {"name": "updated_at", "type": "TIMESTAMPTZ", "constraints": "NOT NULL, DEFAULT now()"}
+      ],
+      "indexes": ["ix_companies_nit (UNIQUE)"]
+    },
+    "company_members": {
+      "columns": [
+        {"name": "id", "type": "UUID", "constraints": "PK, DEFAULT gen_random_uuid()"},
+        {"name": "company_id", "type": "UUID", "constraints": "NOT NULL, FK → companies.id ON DELETE RESTRICT"},
+        {"name": "profile_id", "type": "UUID", "constraints": "NOT NULL, FK → profiles.id ON DELETE RESTRICT"},
+        {"name": "role", "type": "ENUM role_enum", "constraints": "NOT NULL, DEFAULT 'auditor'"},
+        {"name": "created_at", "type": "TIMESTAMPTZ", "constraints": "NOT NULL, DEFAULT now()"}
+      ],
+      "constraints": ["UNIQUE(company_id, profile_id)"],
+      "indexes": ["ix_company_members_company_id", "ix_company_members_profile_id"]
+    }
+  },
+
+  "enum_definitions": {
+    "role_enum": ["admin", "auditor", "reader"],
+    "sector_enum": ["publico", "privado", "mixto", "ong", "otro"],
+    "size_enum": ["micro", "pequena", "mediana", "grande"],
+    "status_enum": ["in_progress", "completed"],
+    "answer_enum": ["yes", "no", "partial", "na"],
+    "priority_enum": ["high", "medium", "low"],
+    "action_status_enum": ["pending", "in_progress", "completed"]
+  },
+
+  "implementation_order": [
+    "1. Define PostgreSQL ENUM types in Alembic (role_enum, sector_enum, size_enum, etc.)",
+    "2. Create profiles table (FK → auth.users)",
+    "3. Create companies table",
+    "4. Create company_members table with composite UNIQUE",
+    "5. Create remaining tables (sections, questions, evaluations, answers, scores, recommendations, action_items, share_links)",
+    "6. Add all FK indexes",
+    "7. Write Pydantic schemas (backend/app/schemas/)",
+    "8. Write CRUD service layer (backend/app/services/)",
+    "9. Write API routers (backend/app/routers/companies.py, members.py)",
+    "10. Frontend: onboarding flow (CompanyCreatePage, CompanySwitchPage, forced redirect logic)",
+    "11. Write pytest tests (≥ 70% coverage)"
+  ],
+
+  "conventions_reminder": {
+    "commits": "feat(phase-2): add companies CRUD with tenant scoping",
+    "backend_path": "backend/app/ — all new models in backend/app/models/",
+    "schemas_path": "backend/app/schemas/",
+    "services_path": "backend/app/services/",
+    "routers_path": "backend/app/routers/",
+    "migrations": "NEVER edit committed Alembic revision; always new revision",
+    "tenancy": "ALL queries must be tenant-scoped (company_id from JWT/context)",
+    "deletes": "RESTRICT — return 409 if dependencies exist, never cascade",
+    "config": "Every new setting → .env.example",
+    "testing": "pytest ≥ 70% backend, vitest + Playwright frontend"
+  }
+}
