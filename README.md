@@ -1,4 +1,5 @@
-# innovatex-hackathon
+# Evalux
+### innovatex-hackathon
 
 Plataforma web para diagnosticar el nivel de cumplimiento de la Ley 1581 de 2012 sobre protección de datos personales en organizaciones colombianas. La solución combina cuestionario guiado, cálculo automático de puntaje, recomendaciones asistidas por IA y seguimiento de un plan de acción.
 
