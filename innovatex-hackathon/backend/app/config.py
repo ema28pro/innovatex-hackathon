@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # AI (placeholder)
-    AI_PROVIDER: str = "openai"
+    AI_PROVIDER: str = "mock"
     OPENAI_API_KEY: SecretStr = SecretStr("")
     ANTHROPIC_API_KEY: SecretStr = SecretStr("")
     GEMINI_API_KEY: SecretStr = SecretStr("")

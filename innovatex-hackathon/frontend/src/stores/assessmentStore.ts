@@ -65,6 +65,10 @@ export const useAssessmentStore = create<AssessmentState>((set, get) => ({
     set({ loading: true, error: null })
     try {
       const assessment = await api.getAssessment(id)
+      // Recompute result if assessment was already completed (e.g. revisiting page)
+      if (assessment.status === 'completed') {
+        assessment.result = computeResult(assessment.answers)
+      }
       set((s) => ({
         assessments: { ...s.assessments, [id]: assessment },
         currentId: id,

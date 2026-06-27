@@ -1,16 +1,43 @@
+import { useState } from 'react'
 import type { Question, AnswerEntry } from '@/types'
+import ExplainModal from './ExplainModal'
 
 interface QuestionCardProps {
   question: Question
   answer: AnswerEntry | undefined
   onAnswer: (entry: Partial<AnswerEntry>) => void
+  onExplain?: () => Promise<string>
+  onSuggest?: () => Promise<string>
 }
 
 export default function QuestionCard({
   question,
   answer,
   onAnswer,
+  onExplain,
+  onSuggest,
 }: QuestionCardProps) {
+  const [modalOpen, setModalOpen] = useState(false)
+  const [modalTitle, setModalTitle] = useState('')
+  const [modalContent, setModalContent] = useState('')
+  const [modalLoading, setModalLoading] = useState(false)
+
+  const handleAI = async (mode: 'explain' | 'suggest') => {
+    const fn = mode === 'explain' ? onExplain : onSuggest
+    if (!fn) return
+    setModalTitle(mode === 'explain' ? 'Explicación IA' : 'Sugerencia IA')
+    setModalContent('')
+    setModalLoading(true)
+    setModalOpen(true)
+    try {
+      const result = await fn()
+      setModalContent(result)
+    } catch {
+      setModalContent('Error al contactar el servicio de IA. Intente de nuevo.')
+    } finally {
+      setModalLoading(false)
+    }
+  }
   if (question.kind === 'gate') {
     const selected = answer?.gate
     return (
