@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost"]
 
+    # Frontend
+    FRONTEND_URL: str = "http://localhost:5173"
+
     # AI (placeholder)
     AI_PROVIDER: str = "openai"
     OPENAI_API_KEY: str = ""

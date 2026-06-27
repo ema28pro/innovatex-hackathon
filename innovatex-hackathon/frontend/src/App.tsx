@@ -7,6 +7,8 @@ import RegisterPage from '@/pages/RegisterPage'
 import OnboardingPage from '@/pages/OnboardingPage'
 import DashboardPage from '@/pages/DashboardPage'
 import AssessmentPage from '@/pages/AssessmentPage'
+import ExportPage from '@/pages/ExportPage'
+import SharePage from '@/pages/SharePage'
 
 function App() {
   const init = useAuthStore((state) => state.init)
@@ -21,7 +23,10 @@ function App() {
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/assessment/:id" element={<AssessmentPage />} />
+          <Route path="/assessment/:id/export" element={<ExportPage />} />
         </Route>
+        {/* Public share view — no auth required */}
+        <Route path="/share/:token" element={<SharePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </div>

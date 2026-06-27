@@ -67,6 +67,7 @@ export interface AnswerEntry {
   gate?: GateAnswer;
   validation?: ValidationAnswer;
   forced?: boolean;
+  notes?: string;
   updatedAt: string;
 }
 
@@ -106,4 +107,36 @@ export interface Assessment {
   result: AssessmentResult | null;
   createdAt: string;
   completedAt: string | null;
+}
+
+// ───────────────────────── API raw answer / recommendations ─────────────────────────
+export interface AssessmentAnswerRaw {
+  id?: string
+  assessmentId: string
+  questionId: string
+  kind: QuestionKind
+  scaleResp?: 0 | 35 | 70 | 100
+  gateResp?: boolean
+  validationResp?: boolean
+  notes?: string | null
+  answeredAt: string
+}
+
+export interface Recommendation {
+  id: string
+  assessmentId: string
+  blockId: BlockId
+  priority: 'high' | 'medium' | 'low'
+  title: string
+  body: string
+  createdAt: string
+}
+
+export interface ActionItem {
+  id: string
+  recommendationId: string
+  title: string
+  status: 'pending' | 'in_progress' | 'completed'
+  assignedTo?: string | null
+  createdAt: string
 }

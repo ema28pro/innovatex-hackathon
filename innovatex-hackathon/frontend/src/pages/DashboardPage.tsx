@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/authStore'
 import { useCompanyStore } from '@/stores/companyStore'
@@ -27,10 +28,14 @@ export default function DashboardPage() {
     navigate('/login', { replace: true })
   }
 
-  const handleStartAssessment = () => {
-    if (!currentCompany || !user) return
-    const id = startAssessment(currentCompany.id, user.id)
-    navigate(`/assessment/${id}`)
+  const handleStartAssessment = async () => {
+    if (!currentCompany) return
+    try {
+      const assessment = await startAssessment(currentCompany.id)
+      navigate(`/assessment/${assessment.id}`)
+    } catch {
+      // error surfaced in store
+    }
   }
 
   // Filter assessments for current company

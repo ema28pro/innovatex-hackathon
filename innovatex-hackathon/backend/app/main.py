@@ -38,6 +38,15 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 from app.routers import companies
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 
+from app.routers import questions
+app.include_router(questions.router, prefix="/api", tags=["Questions"])
+
+from app.routers import assessments
+app.include_router(assessments.router, prefix="/api", tags=["Assessments"])
+
+from app.routers import reports
+app.include_router(reports.router, prefix="/api", tags=["Reports"])
+
 
 @app.get("/")
 async def root():

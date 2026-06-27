@@ -1,13 +1,32 @@
+export type SavingState = 'idle' | 'pending' | 'saving' | 'saved' | 'error'
+
 interface AssessmentHeaderProps {
   progressPct: number
   totalAnswered: number
   totalQuestions: number
+  saving?: SavingState
+}
+
+function SavingIndicator({ saving }: { saving?: SavingState }) {
+  switch (saving) {
+    case 'pending':
+      return <span className="text-slate-400 text-xs">Pendiente…</span>
+    case 'saving':
+      return <span className="text-amber-500 text-xs">Guardando…</span>
+    case 'error':
+      return <span className="text-red-500 text-xs">⚠ Error al guardar</span>
+    case 'idle':
+    case 'saved':
+    default:
+      return <span className="text-emerald-600 text-xs">Guardado ✓</span>
+  }
 }
 
 export default function AssessmentHeader({
   progressPct,
   totalAnswered,
   totalQuestions,
+  saving,
 }: AssessmentHeaderProps) {
   const safePct = Math.min(100, Math.max(0, progressPct))
   return (
@@ -16,9 +35,12 @@ export default function AssessmentHeader({
         <h1 className="text-xl font-semibold text-slate-900">
           Cuestionario de Diagnóstico
         </h1>
-        <span className="text-sm text-slate-500">
-          {totalAnswered} / {totalQuestions} respondidas
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-500">
+            {totalAnswered} / {totalQuestions} respondidas
+          </span>
+          <SavingIndicator saving={saving} />
+        </div>
       </div>
       <div className="progress-track">
         <div

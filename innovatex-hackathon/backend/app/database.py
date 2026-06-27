@@ -5,8 +5,9 @@ pooler connection for FastAPI runtime queries via Supabase PgBouncer.
 """
 import logging
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from app.config import settings
+from app.models.base import Base  # single source of truth for all models
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,6 @@ engine_pooler = create_engine(
 # ── Session factories ──────────────────────────────────────────────────────
 SessionLocalDirect = sessionmaker(autocommit=False, autoflush=False, bind=engine_direct)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine_pooler)
-
-
-class Base(DeclarativeBase):
-    """Base class for all SQLAlchemy models."""
 
 
 def get_db():

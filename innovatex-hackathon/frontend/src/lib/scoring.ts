@@ -1,4 +1,4 @@
-import type { AnswerEntry, AssessmentResult, BlockScore, BlockId, MaturityMeta } from '@/types'
+import type { AnswerEntry, AssessmentResult, BlockScore, BlockId, MaturityMeta, Question } from '@/types'
 import { BLOCKS, QUESTIONS } from '@/data/questionnaire'
 
 const round2 = (n: number) => Math.round(n * 100) / 100
@@ -22,7 +22,11 @@ export function getMaturity(pct: number): MaturityMeta {
   }
 }
 
-export function computeResult(answers: Record<string, AnswerEntry>): AssessmentResult {
+export function computeResult(
+  answers: Record<string, AnswerEntry>,
+  questions: Question[] = QUESTIONS,
+): AssessmentResult {
+  const scaleQuestions = questions.filter((q) => q.kind === 'scale')
   let totalObtained = 0
   let maxPossible = 0
   const blocks: Record<BlockId, BlockScore> = {
@@ -31,7 +35,7 @@ export function computeResult(answers: Record<string, AnswerEntry>): AssessmentR
     gobernanza: { blockId: 'gobernanza', obtained: 0, max: 0, pct: 0 },
   }
 
-  for (const q of QUESTIONS) {
+  for (const q of scaleQuestions) {
     if (q.kind !== 'scale') continue  // gate & validation carry 0 weight
     maxPossible += q.weight
     blocks[q.blockId].max += q.weight

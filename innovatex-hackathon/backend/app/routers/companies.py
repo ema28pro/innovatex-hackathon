@@ -49,8 +49,10 @@ def get_company(
     user: UserPayload = Depends(get_current_user_required),
     db: Session = Depends(get_db),
 ):
-    """Get a single company by ID. Returns 404 if not found or not a member."""
+    """Get a single company by ID. Returns 404 if not found, 403 if not a member."""
     try:
         return company_service.get_company(db, company_id, user_id=user.user_id)
-    except ValueError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+    except ValueError as e:
+        msg = str(e)
+        code = 403 if "Forbidden" in msg else 404
+        raise HTTPException(status_code=code, detail=msg)

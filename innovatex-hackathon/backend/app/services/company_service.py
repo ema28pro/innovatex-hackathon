@@ -7,6 +7,7 @@ from app.models.company_member import CompanyMember
 from app.models.profile import Profile
 from app.models.base import RoleEnum
 from app.schemas.company import CompanyCreate, CompanyRead
+from app.services import tenant_service
 
 logger = logging.getLogger(__name__)
 
@@ -84,10 +85,12 @@ def create_company(
 
 
 def get_company(db: Session, company_id: str, user_id: str) -> CompanyRead:
-    """Return a single company — caller must verify membership."""
+    """Return a single company — verifies caller's membership (IDOR guard)."""
     company = db.query(Company).filter(Company.id == company_id).first()
     if company is None:
         raise ValueError("Company not found")
+    # Enforce membership: raises ValueError("Forbidden") if user is not a member.
+    tenant_service.assert_membership(db, company.id, user_id)
     return _company_to_read(company)
 
 
