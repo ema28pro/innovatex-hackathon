@@ -33,15 +33,15 @@
 
 ## Stack tecnológico
 
-| Capa | Tecnología |
-| --- | --- |
-| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + Zustand |
-| Backend | Python 3.12 + FastAPI + SQLAlchemy + Alembic |
-| Base de datos | PostgreSQL administrado por Supabase |
-| Autenticación | Supabase Auth con JWT |
-| IA | Capa intercambiable para proveedores como OpenAI, Anthropic o Gemini |
-| Reportes | PDF con ReportLab y Excel con OpenPyXL |
-| Infraestructura | Docker + docker-compose |
+| Capa            | Tecnología                                                           |
+| --------------- | -------------------------------------------------------------------- |
+| Frontend        | React 18 + TypeScript + Vite + Tailwind CSS + Zustand                |
+| Backend         | Python 3.12 + FastAPI + SQLAlchemy + Alembic                         |
+| Base de datos   | PostgreSQL administrado por Supabase                                 |
+| Autenticación   | Supabase Auth con JWT                                                |
+| IA              | Capa intercambiable para proveedores como OpenAI, Anthropic o Gemini |
+| Reportes        | PDF con ReportLab y Excel con OpenPyXL                               |
+| Infraestructura | Docker + docker-compose                                              |
 
 ## Flujo de uso
 
@@ -54,17 +54,17 @@
 
 ## Estado del proyecto
 
-| Fase | Descripción | Estado |
-| --- | --- | --- |
-| 1 | Setup e infraestructura | Completado |
-| 2 | Modelos + API base + onboarding | Completado |
-| 3 | Cuestionario interactivo con auto-guardado | Completado |
-| 4 | Sistema de scoring y resultado del diagnóstico | Completado |
-| 5 | Integración de IA para explicar, sugerir y recomendar | Completado |
-| 6 | Reportes PDF, Excel y links compartibles | Completado |
-| 7 | Plan de acción con seguimiento y responsables | Completado |
-| 8 | Dashboard con gráficos e histórico | Pendiente |
-| 9 | Seguridad OWASP, responsive y pulido final | Medio |
+| Fase | Descripción                                           | Estado     |
+| ---- | ----------------------------------------------------- | ---------- |
+| 1    | Setup e infraestructura                               | Completado |
+| 2    | Modelos + API base + onboarding                       | Completado |
+| 3    | Cuestionario interactivo con auto-guardado            | Completado |
+| 4    | Sistema de scoring y resultado del diagnóstico        | Completado |
+| 5    | Integración de IA para explicar, sugerir y recomendar | Completado |
+| 6    | Reportes PDF, Excel y links compartibles              | Completado |
+| 7    | Plan de acción con seguimiento y responsables         | Completado |
+| 8    | Dashboard con gráficos e histórico                    | Pendiente  |
+| 9    | Seguridad OWASP, responsive y pulido final            | Medio      |
 
 
 ## Requisitos previos
@@ -121,7 +121,6 @@ El frontend se ejecuta en `http://localhost:5173`.
 
 ### Backend
 
-<<<<<<< HEAD
 ```bash
 docker exec diagnostico-backend uv run alembic upgrade head
 docker exec diagnostico-backend uv run alembic revision --autogenerate -m "descripcion"
@@ -187,10 +186,3 @@ innovatex-hackathon/
 ## Licencia
 
 Proyecto desarrollado para el Innovatex Hackathon.
-=======
-1. Iniciar el backend desde backend.
-2. Iniciar el frontend desde frontend.
-3. Abrir la aplicación web y autenticarte.
-4. Crear o seleccionar una empresa.
-5. Ejecutar el diagnóstico y revisar resultados, reportes y plan de acción.
->>>>>>> 4271cf4468575af4753014280dbc5ffbb89a8ce9
