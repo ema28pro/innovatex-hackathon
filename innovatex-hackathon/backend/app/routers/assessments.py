@@ -8,7 +8,7 @@ All ValueErrors from the service layer are mapped to HTTP here. Tenant
 """
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -91,12 +91,13 @@ def upsert_answer(
 def update_assessment(
     assessment_id: str,
     payload: AssessmentUpdate,
+    background_tasks: BackgroundTasks,
     user: UserPayload = Depends(get_current_user_required),
     db: Session = Depends(get_db),
 ):
     try:
         return assessment_service.update_assessment(
-            db, assessment_id, user.user_id, payload)
+            db, assessment_id, user.user_id, payload, background_tasks)
     except ValueError as exc:
         msg = str(exc)
         # Contract mapping: 403 forbidden, 404 not found,
@@ -112,3 +113,72 @@ def update_assessment(
         logger.exception("Failed to update assessment")
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ── AI endpoints (Phase 5) ──────────────────────────────────────────────────
+
+from pydantic import BaseModel, Field
+
+
+class ExplainRequest(BaseModel):
+    question_text: str = Field(..., max_length=2000)
+    legal_reference: str = Field(default="", max_length=500)
+    company_context: str = Field(default="", max_length=500)
+
+
+class SuggestRequest(BaseModel):
+    question_text: str = Field(..., max_length=2000)
+    legal_reference: str = Field(default="", max_length=500)
+    prior_answers: str = Field(default="", max_length=5000)
+    company_context: str = Field(default="", max_length=500)
+
+
+class AIResponse(BaseModel):
+    result: str
+
+
+@router.post("/ai/explain", response_model=AIResponse)
+async def explain_question(
+    payload: ExplainRequest,
+    user: UserPayload = Depends(get_current_user_required),
+):
+    """AI explains why a question matters for compliance."""
+    from app.ai import get_ai_provider
+    try:
+        provider = get_ai_provider()
+        result = await provider.explain_question(
+            question_text=payload.question_text,
+            legal_reference=payload.legal_reference,
+            company_context=payload.company_context,
+        )
+        return AIResponse(result=result)
+    except Exception:
+        logger.exception("AI explain failed for user %s", user.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service temporarily unavailable",
+        )
+
+
+@router.post("/ai/suggest", response_model=AIResponse)
+async def suggest_answer(
+    payload: SuggestRequest,
+    user: UserPayload = Depends(get_current_user_required),
+):
+    """AI suggests the best answer based on company context and prior answers."""
+    from app.ai import get_ai_provider
+    try:
+        provider = get_ai_provider()
+        result = await provider.suggest_answer(
+            question_text=payload.question_text,
+            legal_reference=payload.legal_reference,
+            prior_answers=payload.prior_answers,
+            company_context=payload.company_context,
+        )
+        return AIResponse(result=result)
+    except Exception:
+        logger.exception("AI suggest failed for user %s", user.user_id)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI service temporarily unavailable",
+        )

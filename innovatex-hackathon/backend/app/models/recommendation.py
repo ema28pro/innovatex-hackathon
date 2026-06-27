@@ -1,6 +1,6 @@
 """Recommendation — AI-generated compliance recommendation per assessment."""
 import uuid as _uuid
-from sqlalchemy import String, Text, ForeignKey, Index
+from sqlalchemy import String, Text, ForeignKey, Index, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base, TimestampMixin, PriorityEnum
@@ -29,4 +29,5 @@ class Recommendation(Base, TimestampMixin):
 
     __table_args__ = (
         Index("ix_recommendations_assessment_id", "assessment_id"),
+        UniqueConstraint("assessment_id", "block_id", name="uq_recommendation_assessment_block"),
     )

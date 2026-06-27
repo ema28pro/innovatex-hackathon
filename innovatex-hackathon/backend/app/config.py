@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr
 from typing import List
 
 
@@ -37,9 +38,14 @@ class Settings(BaseSettings):
 
     # AI (placeholder)
     AI_PROVIDER: str = "openai"
-    OPENAI_API_KEY: str = ""
-    ANTHROPIC_API_KEY: str = ""
-    GEMINI_API_KEY: str = ""
+    OPENAI_API_KEY: SecretStr = SecretStr("")
+    ANTHROPIC_API_KEY: SecretStr = SecretStr("")
+    GEMINI_API_KEY: SecretStr = SecretStr("")
+
+    # AI (Phase 5) — extended
+    AI_FALLBACK_PROVIDERS: list[str] = []
+    AI_TIMEOUT_SECONDS: int = 5
+    AI_MOCK_ENABLED: bool = True
 
 
 settings = Settings()

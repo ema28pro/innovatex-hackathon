@@ -1,13 +1,28 @@
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 
+logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan handler."""
+    # Pre-warm AI provider on startup
+    try:
+        from app.ai import get_ai_provider
+        get_ai_provider()
+    except Exception:
+        logger.warning("AI provider not available at startup")
     yield
+    # Gracefully close AI provider HTTP clients
+    try:
+        from app.ai import close_ai_provider
+        await close_ai_provider()
+    except Exception:
+        logger.warning("Failed to close AI provider cleanly")
 
 
 app = FastAPI(

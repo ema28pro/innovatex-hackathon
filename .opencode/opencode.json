@@ -4,7 +4,7 @@
     "code-reviewer": {
       "description": "Reviews code for best practices and potential issues",
       "mode": "subagent",
-      "model": "opencode-go/minimax-m2.5",
+      "model": "opencode-go/deepseek-v4-flash",
       "prompt": "{file:prompts/code-reviewer.txt}",
       "tools": {
         "write": false,
@@ -14,17 +14,18 @@
     "architect": {
         "description": "Designs the overall architecture of the application",
         "mode": "subagent",
-        "model": "opencode-go/minimax-m2.5",
+        "model": "opencode-go/mimo-v2.5-pro",
         "prompt": "{file:prompts/architect.txt}",
         "tools": {
           "write": false,
-          "edit": false
+          "edit": false,
+          "read": true
         }
     },
     "error-build-fixer": {
         "description": "Handles build errors and provides fixes. Use when there are build errors in the project.",
         "mode": "subagent",
-        "model": "opencode-go/minimax-m2.5",
+        "model": "opencode-go/mimo-v2.5-pro",
         "prompt": "{file:prompts/error-builder.txt}",
         "tools": {
         "read": true,
@@ -64,7 +65,7 @@
     "tdd-developer": {
         "description": "Writes tests before implementation code. Use when there is a need for high test coverage and maintainable code.",
         "mode": "subagent",
-        "model": "opencode-go/minimax-m2.5",
+        "model": "opencode-go/deepseek-v4-flash",
         "prompt": "{file:prompts/tdd-developer.txt}",
         "tools": {
         "read": true,

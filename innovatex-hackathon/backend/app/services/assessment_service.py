@@ -158,7 +158,8 @@ def upsert_answer(
 
 
 def update_assessment(
-    db: Session, assessment_id, user_id: str, payload: AssessmentUpdate
+    db: Session, assessment_id, user_id: str, payload: AssessmentUpdate,
+    background_tasks=None,
 ) -> AssessmentRead:
     """Update an assessment — primarily used to transition draft -> completed.
 
@@ -187,6 +188,13 @@ def update_assessment(
         assessment.overall_score = overall_pct
         assessment.completed_at = datetime.now(timezone.utc)
         assessment.status = "completed"
+
+        # Enqueue AI recommendation generation as background task
+        if background_tasks is not None:
+            from app.ai.recommendation_pipeline import generate_recommendations_for_assessment
+            background_tasks.add_task(
+                generate_recommendations_for_assessment, str(assessment.id)
+            )
     elif payload.status is not None:
         assessment.status = payload.status
 
