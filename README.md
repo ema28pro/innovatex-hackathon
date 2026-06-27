@@ -1,105 +1,105 @@
-# innovatex-hackathon
+# Evalux: Diagnóstico Ley 1581 de 2012
 
-Plataforma web para diagnosticar el nivel de cumplimiento de la Ley 1581 de 2012 sobre protección de datos personales en organizaciones colombianas. La solución combina cuestionario guiado, cálculo automático de puntaje, recomendaciones asistidas por IA y seguimiento de un plan de acción.
+<div align="center">
+	<br />
+	<img src="icono_evalux.png" alt="Logo de la app" width="180" />
+	<img src="logo_equipo.jpg" alt="Logo del equipo" width="180" />
+	<br />
+	<h3>Plataforma web para diagnosticar el cumplimiento de privacidad en organizaciones colombianas</h3>
+	<p>
+		Cuestionario guiado, auto-guardado, scoring automático, recomendaciones con IA y plan de acción para seguimiento.
+	</p>
 
-## Qué resuelve
+<img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" />
+<img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.0-3178C6?logo=typescript&logoColor=white" />
+<img alt="Tailwind" src="https://img.shields.io/badge/TailwindCSS-3.4-06B6D4?logo=tailwindcss&logoColor=white" />
+<br />
 
-- Evalúa el estado de cumplimiento de privacidad de una empresa.
-- Calcula un porcentaje de madurez por bloques y por pregunta.
-- Genera recomendaciones y acciones de mejora.
-- Permite un flujo de uso más claro para equipos legales, TI y auditoría.
+<img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white" />
+<img alt="Supabase" src="https://img.shields.io/badge/Supabase-Auth%20%2B%20PostgreSQL-3ECF8E?logo=supabase&logoColor=white" />
+<img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" />
 
-## Estructura
+</div>
 
-- frontend/: interfaz web construida en React.
-- backend/: API y lógica de negocio en FastAPI.
+---
 
-## Tecnologías
+## Qué hace
 
-### Frontend
+- Evalúa el estado de cumplimiento de la Ley 1581 de 2012.
+- Calcula el score por bloques y el resultado global del diagnóstico.
+- Guarda respuestas automáticamente para no perder avance.
+- Genera recomendaciones y material de remediación.
+- Permite exportar reportes y compartir resultados.
 
-- React 18
-- Vite
-- TypeScript
-- Tailwind CSS
-- Zustand
-- React Router
-- Supabase JS
-- Axios
+## Stack tecnológico
 
-### Backend
+| Capa | Tecnología |
+| --- | --- |
+| Frontend | React 18 + TypeScript + Vite + Tailwind CSS + Zustand |
+| Backend | Python 3.12 + FastAPI + SQLAlchemy + Alembic |
+| Base de datos | PostgreSQL administrado por Supabase |
+| Autenticación | Supabase Auth con JWT |
+| IA | Capa intercambiable para proveedores como OpenAI, Anthropic o Gemini |
+| Reportes | PDF con ReportLab y Excel con OpenPyXL |
+| Infraestructura | Docker + docker-compose |
 
-- Python 3.12+
-- FastAPI
-- Uvicorn
-- SQLAlchemy
-- Alembic
-- Pydantic Settings
-- PyJWT
-- ReportLab
-- OpenPyXL
+## Flujo de uso
 
-### Infraestructura
+1. El usuario inicia sesión con Supabase Auth.
+2. Crea o selecciona una empresa en el onboarding.
+3. Abre el cuestionario y responde los bloques en cualquier orden.
+4. El sistema guarda cada respuesta de forma automática.
+5. Se calcula el resultado y se generan recomendaciones.
+6. Se revisa el plan de acción y se exportan los reportes.
 
-- Supabase como base de datos PostgreSQL administrada
-- Docker y docker-compose
-- Nginx para servir la aplicación en despliegue
+## Estado del proyecto
 
-## Arquitectura general
+| Fase | Descripción | Estado |
+| --- | --- | --- |
+| 1 | Setup e infraestructura | Completado |
+| 2 | Modelos + API base + onboarding | Completado |
+| 3 | Cuestionario interactivo con auto-guardado | Completado |
+| 4 | Sistema de scoring y resultado del diagnóstico | Completado |
+| 5 | Integración de IA para explicar, sugerir y recomendar | Completado |
+| 6 | Reportes PDF, Excel y links compartibles | Completado |
+| 7 | Plan de acción con seguimiento y responsables | Completado |
+| 8 | Dashboard con gráficos e histórico | Pendiente |
+| 9 | Seguridad OWASP, responsive y pulido final | Medio |
 
-El frontend consume la API del backend para autenticar usuarios, cargar empresas, ejecutar diagnósticos y obtener resultados.
 
-- El frontend administra la experiencia de usuario y el estado visual.
-- El backend expone endpoints REST para compañías, cuestionarios, reportes y scoring.
-- La base de datos persiste empresas, diagnósticos, respuestas, recomendaciones y planes de acción en Supabase.
-- La capa de IA se integra como un servicio desacoplado para poder cambiar de proveedor sin reescribir el negocio.
+## Requisitos previos
 
-## Autenticación
+- Docker y docker-compose para levantar el backend.
+- Node.js 20 o superior para el frontend.
+- Una cuenta de Supabase con proyecto creado.
+- Opcional: claves de OpenAI, Anthropic o Gemini si vas a probar la capa de IA real.
 
-La plataforma usa Supabase Auth para el acceso de usuarios.
+## Cómo ejecutar el proyecto
 
-- Inicio de sesión con correo y contraseña.
-- Inicio de sesión con OAuth de Google.
-- La sesión se utiliza para consumir la API y asociar al usuario con sus empresas y diagnósticos.
+El backend corre dentro de Docker y el frontend se ejecuta localmente con Vite.
 
-## Requisitos
+### 1. Iniciar el backend
 
-- Node.js y npm.
-- Python 3.12 o superior.
-- uv instalado para manejar el entorno del backend.
-- PostgreSQL disponible para la API.
+Desde la carpeta `innovatex-hackathon/`:
 
-## Cómo ejecutar el backend
+```bash
+docker-compose up --build
+```
 
-Los comandos se ejecutan dentro de la carpeta backend.
+o sin docker-compose:
 
-```powershell
+```bash
 cd backend
+.venv/scripts/activate
 uv sync
-.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Si usas CMD en Windows, puedes activar el entorno con:
+Esto construye el backend, ejecuta migraciones, carga datos semilla e inicia FastAPI en `http://localhost:8000`.
 
-```cmd
-.venv\Scripts\activate.bat
-```
+### 2. Iniciar el frontend
 
-## Backend: qué incluye
-
-- `app/main.py`: arranque de la aplicación FastAPI.
-- `app/config.py`: configuración y variables de entorno.
-- `app/database.py`: conexión a PostgreSQL.
-- `app/models/`: modelos de datos.
-- `app/schemas/`: contratos de entrada y salida.
-- `app/routers/`: rutas de la API.
-- `app/services/`: lógica de negocio.
-- `app/reports/`: exportación a PDF y Excel.
-
-## Cómo ejecutar el frontend
-
-Los comandos se ejecutan dentro de la carpeta frontend.
+En otra terminal:
 
 ```bash
 cd frontend
@@ -107,27 +107,82 @@ npm install
 npm run dev
 ```
 
-## Frontend: qué incluye
+El frontend se ejecuta en `http://localhost:5173`.
 
-- `src/main.tsx`: punto de entrada de React.
-- `src/App.tsx`: composición general de la aplicación.
-- `src/pages/`: pantallas del flujo de usuario.
-- `src/components/`: componentes reutilizables.
-- `src/api/`: cliente HTTP para consumir el backend.
-- `src/stores/`: estado global con Zustand.
-- `src/lib/`: utilidades y helpers.
+### 3. Verificar el flujo básico
 
-## Notas
+1. Abre `http://localhost:5173`.
+2. Inicia sesión o regístrate.
+3. Crea una empresa en el onboarding.
+4. Completa el cuestionario.
+5. Revisa el score, las recomendaciones y el plan de acción.
 
-- El backend expone la API en http://127.0.0.1:8000.
-- El frontend levanta el servidor de desarrollo con Vite.
-- Cada parte del proyecto se ejecuta desde su carpeta correspondiente.
-- Si necesitas editar variables de entorno o configuración, revisa los archivos de cada carpeta antes de iniciar los servicios.
+## Comandos útiles
 
-## Flujo esperado
+### Backend
 
-1. Iniciar el backend desde backend.
-2. Iniciar el frontend desde frontend.
-3. Abrir la aplicación web y autenticarte.
-4. Crear o seleccionar una empresa.
-5. Ejecutar el diagnóstico y revisar resultados, reportes y plan de acción.
+```bash
+docker exec diagnostico-backend uv run alembic upgrade head
+docker exec diagnostico-backend uv run alembic revision --autogenerate -m "descripcion"
+docker exec diagnostico-backend uv run pytest
+docker exec -it diagnostico-backend bash
+docker-compose logs -f backend
+```
+
+### Frontend
+
+```bash
+cd frontend && npm test
+cd frontend && npm run build
+cd frontend && npm run lint
+```
+
+## Estructura del proyecto
+
+```text
+innovatex-hackathon/
+├── docker-compose.yml
+├── README.md
+├── PLAN.md
+├── PHASES.md
+├── backend/
+│   ├── Dockerfile
+│   ├── entrypoint.sh
+│   ├── pyproject.toml
+│   ├── alembic/
+│   └── app/
+│       ├── main.py
+│       ├── config.py
+│       ├── database.py
+│       ├── dependencies.py
+│       ├── models/
+│       ├── schemas/
+│       ├── routers/
+│       ├── services/
+│       ├── reports/
+│       └── seeds/
+├── frontend/
+│   ├── package.json
+│   ├── vite.config.ts
+│   └── src/
+│       ├── main.tsx
+│       ├── App.tsx
+│       ├── api/
+│       ├── components/
+│       ├── pages/
+│       ├── stores/
+│       └── lib/
+└── nginx/
+		└── nginx.conf
+```
+
+## Documentación relacionada
+
+- `PLAN.md` — plan del producto y alcance funcional.
+- `PHASES.md` — desglose de implementación por fases.
+- `Cuestionario_Diagnostico_Privacidad.md` — fuente del cuestionario, pesos y bloques.
+- `descripcion_solucion.md` — descripción general de la solución.
+
+## Licencia
+
+Proyecto desarrollado para el Innovatex Hackathon.
