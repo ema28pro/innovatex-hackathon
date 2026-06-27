@@ -3,5 +3,7 @@ mermaid_convert.py
 crear_tablas.sql
 jola.png.excalidraw
 innovatex-hackathon/frontend/node_modules/
-frontend/node_modules/
-.node_modules/
+innovatex-hackathon/backend/venv/
+.DS_Store
+*.env
+*.log
