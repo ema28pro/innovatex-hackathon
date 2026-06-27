@@ -27,6 +27,7 @@
 
 ## Qué hace
 
+- Registra tu empresa.
 - Evalúa el estado de cumplimiento de la Ley 1581 de 2012.
 - Calcula el score por bloques y el resultado global del diagnóstico.
 - Guarda respuestas automáticamente para no perder avance.
