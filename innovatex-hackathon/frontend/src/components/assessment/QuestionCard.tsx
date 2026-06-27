@@ -38,6 +38,35 @@ export default function QuestionCard({
       setModalLoading(false)
     }
   }
+  const aiButtons = (
+    <div className="flex gap-2 pt-2">
+      {onExplain && (
+        <button
+          type="button"
+          onClick={() => handleAI('explain')}
+          className="text-xs px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Explicar
+        </button>
+      )}
+      {onSuggest && (
+        <button
+          type="button"
+          onClick={() => handleAI('suggest')}
+          className="text-xs px-3 py-1.5 rounded-md border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors flex items-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          </svg>
+          Sugerir
+        </button>
+      )}
+    </div>
+  )
+
   if (question.kind === 'gate') {
     const selected = answer?.gate
     return (
@@ -59,6 +88,14 @@ export default function QuestionCard({
             No
           </button>
         </div>
+        {aiButtons}
+        <ExplainModal
+          open={modalOpen}
+          title={modalTitle}
+          content={modalContent}
+          loading={modalLoading}
+          onClose={() => setModalOpen(false)}
+        />
       </div>
     )
   }
@@ -84,6 +121,14 @@ export default function QuestionCard({
             No
           </button>
         </div>
+        {aiButtons}
+        <ExplainModal
+          open={modalOpen}
+          title={modalTitle}
+          content={modalContent}
+          loading={modalLoading}
+          onClose={() => setModalOpen(false)}
+        />
       </div>
     )
   }
@@ -135,6 +180,14 @@ export default function QuestionCard({
           )
         })}
       </div>
+      {aiButtons}
+      <ExplainModal
+        open={modalOpen}
+        title={modalTitle}
+        content={modalContent}
+        loading={modalLoading}
+        onClose={() => setModalOpen(false)}
+      />
     </div>
   )
 }

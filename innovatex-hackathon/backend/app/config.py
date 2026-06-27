@@ -44,8 +44,13 @@ class Settings(BaseSettings):
 
     # AI (Phase 5) — extended
     AI_FALLBACK_PROVIDERS: list[str] = []
-    AI_TIMEOUT_SECONDS: int = 5
+    AI_TIMEOUT_SECONDS: int = 120
+    AI_MAX_TOKENS: int = 4096
     AI_MOCK_ENABLED: bool = True
+
+    # Ollama (local LLM)
+    OLLAMA_BASE_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "llama3.2:1b"
 
 
 settings = Settings()

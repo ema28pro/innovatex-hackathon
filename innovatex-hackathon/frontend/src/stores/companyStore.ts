@@ -14,6 +14,7 @@ interface CompanyState {
   createCompany: (data: {
     companyName: string; nit: string; sector: Sector; size: CompanySize
   }) => Promise<Company>
+  setCurrentCompany: (id: string) => void
   clearCompany: () => void
 }
 
@@ -80,6 +81,8 @@ export const useCompanyStore = create<CompanyState>()(
           throw new Error(msg)
         }
       },
+
+      setCurrentCompany: (id: string) => set({ currentCompanyId: id }),
 
       clearCompany: () => set({ currentCompanyId: null, companies: [], loaded: false }),
     }),

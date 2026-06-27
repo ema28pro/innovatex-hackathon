@@ -20,6 +20,7 @@ interface AssessmentState {
   saving: SavingState
 
   getCurrent: () => Assessment | null
+  loadCompanyAssessments: (companyId: string) => Promise<void>
   startAssessment: (companyId: string, userId?: string) => Promise<Assessment>
   loadAssessment: (id: string) => Promise<Assessment | null>
   setCurrent: (id: string) => void
@@ -43,6 +44,29 @@ export const useAssessmentStore = create<AssessmentState>((set, get) => ({
   getCurrent: () => {
     const { currentId, assessments } = get()
     return currentId ? assessments[currentId] ?? null : null
+  },
+
+  loadCompanyAssessments: async (companyId) => {
+    set({ loading: true, error: null })
+    try {
+      const list = await api.listAssessments(companyId)
+      const map: Record<string, Assessment> = {}
+      for (const a of list) {
+        // Use existing in-memory assessment if available (preserves unsaved edits)
+        const existing = get().assessments[a.id]
+        map[a.id] = existing ?? a
+        // Recompute result on load for completed assessments
+        if (a.status === 'completed' && !map[a.id].result) {
+          map[a.id].result = computeResult(a.answers)
+        }
+      }
+      set({
+        assessments: { ...get().assessments, ...map },
+        loading: false,
+      })
+    } catch (e: any) {
+      set({ loading: false, error: e?.message || 'Error al cargar diagnósticos' })
+    }
   },
 
   startAssessment: async (companyId) => {

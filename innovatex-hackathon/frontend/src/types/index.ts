@@ -140,3 +140,33 @@ export interface ActionItem {
   assignedTo?: string | null
   createdAt: string
 }
+
+// ───────────────────────── Remediation Plan (Phase 7) ────────────────────────
+export interface WeakQuestion {
+  questionSlug: string
+  questionText: string
+  currentAnswer: string
+  blockTitle: string
+  kind: 'gate' | 'scale' | 'validation'
+}
+
+export interface RemediationPlanItem {
+  questionSlug: string
+  questionText: string
+  currentAnswer: string
+  title: string
+  description: string
+  priority: 'high' | 'medium' | 'low'
+  steps: string[]
+}
+
+export interface RemediationPlan {
+  assessmentId: string
+  overallScore: number | null
+  maturityLevel: string
+  maturityLabel: string
+  weakQuestions: WeakQuestion[]
+  planItems: RemediationPlanItem[]
+  generatedAt: string | null
+  error: string | null
+}

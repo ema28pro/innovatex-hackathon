@@ -157,6 +157,41 @@ def upsert_answer(
     return AnswerRead.model_validate(answer)
 
 
+def list_assessments(
+    db: Session, user_id: str, company_id: str | None = None
+) -> list[AssessmentRead]:
+    """Return assessments the user has access to, optionally filtered by company.
+
+    If company_id is provided, only assessments for that company are returned
+    (the caller must be a member of that company). Otherwise returns all
+    assessments across all companies the user belongs to.
+    """
+    uid = _uuid.UUID(str(user_id))
+
+    from app.models.company_member import CompanyMember
+
+    # Subquery: companies the user belongs to
+    user_company_ids = (
+        db.query(CompanyMember.company_id)
+        .filter(CompanyMember.profile_id == uid)
+        .subquery()
+    )
+
+    query = (
+        db.query(Assessment)
+        .filter(Assessment.company_id.in_(user_company_ids))
+        .order_by(Assessment.created_at.desc())
+    )
+
+    if company_id:
+        cid = _to_uuid(company_id)
+        tenant_service.assert_membership(db, cid, user_id)
+        query = query.filter(Assessment.company_id == cid)
+
+    assessments = query.all()
+    return [AssessmentRead.model_validate(a) for a in assessments]
+
+
 def update_assessment(
     db: Session, assessment_id, user_id: str, payload: AssessmentUpdate,
     background_tasks=None,
@@ -195,6 +230,15 @@ def update_assessment(
             background_tasks.add_task(
                 generate_recommendations_for_assessment, str(assessment.id)
             )
+
+        # Enqueue remediation plan generation (Phase 7) as background task
+        if background_tasks is not None:
+            from app.services.remediation_plan_service import (
+                generate_remediation_plan as _generate_plan,
+            )
+            background_tasks.add_task(
+                _generate_plan_background, str(assessment.id)
+            )
     elif payload.status is not None:
         assessment.status = payload.status
 
@@ -204,3 +248,25 @@ def update_assessment(
     if not hasattr(assessment, "answers"):
         assessment.answers = []
     return AssessmentRead.model_validate(assessment)
+
+
+async def _generate_plan_background(assessment_id: str) -> None:
+    """Background task wrapper for remediation plan generation.
+
+    Opens its OWN database session (never uses the request-scoped one) so
+    this can safely run as a FastAPI BackgroundTask after the response is sent.
+    Handles all exceptions gracefully — the on-demand endpoint can regenerate.
+    """
+    from app.database import SessionLocal
+    from app.services.remediation_plan_service import generate_remediation_plan
+
+    db: Session = SessionLocal()
+    try:
+        await generate_remediation_plan(db, assessment_id)
+        logger.info("Background remediation plan generated for %s", assessment_id)
+    except Exception:
+        logger.exception(
+            "Background remediation plan failed for %s", assessment_id
+        )
+    finally:
+        db.close()

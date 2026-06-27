@@ -6,6 +6,8 @@ interface QuestionListProps {
   answers: Record<string, AnswerEntry>
   onAnswer: (questionId: string, entry: Partial<AnswerEntry>) => void
   onGateChange: (answer: 'si' | 'no') => void
+  onExplain?: (questionId: string) => Promise<string>
+  onSuggest?: (questionId: string) => Promise<string>
 }
 
 export default function QuestionList({
@@ -13,6 +15,8 @@ export default function QuestionList({
   answers,
   onAnswer,
   onGateChange,
+  onExplain,
+  onSuggest,
 }: QuestionListProps) {
   const p1Answer = answers['P1']?.gate
 
@@ -47,6 +51,8 @@ export default function QuestionList({
               question={question}
               answer={answer}
               onAnswer={handleAnswer}
+              onExplain={onExplain ? () => onExplain(question.id) : undefined}
+              onSuggest={onSuggest ? () => onSuggest(question.id) : undefined}
             />
             {question.id === 'P1' && p1Answer === 'no' && (
               <p className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md p-3">

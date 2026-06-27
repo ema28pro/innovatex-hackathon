@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.dependencies import get_current_user_required, UserPayload
+from app.models.assessment import Assessment
 from app.schemas.assessment import (
     AssessmentCreate, AssessmentRead, AssessmentUpdate,
     AnswerUpsert, AnswerRead,
@@ -41,6 +42,21 @@ def start_assessment(
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.get("/assessments", response_model=list[AssessmentRead])
+def list_assessments(
+    company_id: str | None = None,
+    user: UserPayload = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """List assessments, optionally filtered by company_id."""
+    try:
+        return assessment_service.list_assessments(db, user.user_id, company_id)
+    except ValueError as exc:
+        msg = str(exc)
+        code = 403 if "Forbidden" in msg else 400
+        raise HTTPException(status_code=code, detail=msg)
 
 
 @router.get("/assessments/{assessment_id}", response_model=AssessmentRead)
@@ -113,6 +129,96 @@ def update_assessment(
         logger.exception("Failed to update assessment")
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc))
+
+
+# ── Remediation Plan endpoint (Phase 7) ──────────────────────────────────────
+
+from app.schemas.remediation_plan import RemediationPlanRead
+from app.services import remediation_plan_service
+
+
+@router.post(
+    "/assessments/{assessment_id}/remediation-plan",
+    response_model=RemediationPlanRead,
+)
+async def generate_remediation_plan(
+    assessment_id: str,
+    user: UserPayload = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """Generate a remediation plan for questions answered "No" or "Partial".
+
+    Analyzes the completed assessment, identifies weak answers, and uses the
+    AI provider (with a specialised system prompt) to produce a structured
+    improvement plan with prioritised actions and concrete steps.
+    """
+    # Tenant check
+    from app.services import tenant_service
+    import uuid as _uuid
+    try:
+        aid = _uuid.UUID(assessment_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    assessment = db.query(Assessment).filter(Assessment.id == aid).first()
+    if assessment is None:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    try:
+        tenant_service.assert_membership(db, assessment.company_id, user.user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    try:
+        plan = await remediation_plan_service.generate_remediation_plan(
+            db, assessment_id
+        )
+        return plan
+    except ValueError as exc:
+        msg = str(exc)
+        code = 400 if "not completed" in msg else 404
+        raise HTTPException(status_code=code, detail=msg)
+    except Exception as exc:
+        logger.exception("Remediation plan generation failed for %s", assessment_id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to generate remediation plan",
+        )
+
+
+@router.get(
+    "/assessments/{assessment_id}/remediation-plan/weak-questions",
+    response_model=list[dict],
+)
+def list_weak_questions(
+    assessment_id: str,
+    user: UserPayload = Depends(get_current_user_required),
+    db: Session = Depends(get_db),
+):
+    """List questions answered "No" or "Partial" without generating an AI plan.
+
+    This is a lightweight endpoint the frontend can use to show the issues
+    before the user triggers the full AI-powered plan generation.
+    """
+    from app.services import tenant_service
+    import uuid as _uuid
+    try:
+        aid = _uuid.UUID(assessment_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    assessment = db.query(Assessment).filter(Assessment.id == aid).first()
+    if assessment is None:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+    try:
+        tenant_service.assert_membership(db, assessment.company_id, user.user_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Assessment not found")
+
+    try:
+        weak = remediation_plan_service.get_weak_questions_only(db, assessment_id)
+        return [w.model_dump() for w in weak]
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
 
 # ── AI endpoints (Phase 5) ──────────────────────────────────────────────────

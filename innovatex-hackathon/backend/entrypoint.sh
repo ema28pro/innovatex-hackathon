@@ -10,11 +10,16 @@
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
+echo "==> Ensuring dependencies are up to date..."
+export TMPDIR=/app/.tmp
+mkdir -p "$TMPDIR"
+uv sync --frozen --no-dev 2>&1
+
 echo "==> Applying database migrations..."
-.venv/bin/alembic upgrade head
+uv run alembic upgrade head
 
 echo "==> Seeding reference data..."
-.venv/bin/python -m app.seeds.runner
+uv run python -m app.seeds.runner
 
 echo "==> Starting FastAPI server..."
-exec .venv/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+exec uv run uvicorn app.main:app --host 0.0.0.0 --port 8000

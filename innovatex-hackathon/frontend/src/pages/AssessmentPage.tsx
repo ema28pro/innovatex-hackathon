@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useAssessmentStore } from '@/stores/assessmentStore'
+import { useCompanyStore } from '@/stores/companyStore'
 import { useDebouncedSave } from '@/hooks/useDebouncedSave'
 import type { BlockId, AnswerEntry } from '@/types'
 import { BLOCKS, QUESTIONS } from '@/data/questionnaire'
@@ -9,6 +10,8 @@ import BlockNavigator from '@/components/assessment/BlockNavigator'
 import QuestionList from '@/components/assessment/QuestionList'
 import AssessmentFooter from '@/components/assessment/AssessmentFooter'
 import ResultPanel from '@/components/assessment/ResultPanel'
+import RemediationPlanView from '@/components/assessment/RemediationPlanView'
+import { explainQuestion, suggestAnswer } from '@/api/ai'
 
 const BLOCK_ORDER: BlockId[] = ['politica', 'diseno', 'gobernanza']
 
@@ -121,6 +124,44 @@ export default function AssessmentPage() {
     complete()
   }, [complete])
 
+  // Company context for AI
+  const companies = useCompanyStore((s) => s.companies)
+  const currentCompanyId = useCompanyStore((s) => s.currentCompanyId)
+  const currentCompany = companies.find((c) => c.id === currentCompanyId)
+  const companyContext = currentCompany
+    ? `${currentCompany.sector}|${currentCompany.size}`
+    : ''
+
+  // AI explain callback per question
+  const handleExplain = useCallback(
+    async (questionId: string): Promise<string> => {
+      const question = QUESTIONS.find((q) => q.id === questionId)
+      if (!question) return 'Pregunta no encontrada.'
+      return explainQuestion(question.text, '', companyContext)
+    },
+    [companyContext],
+  )
+
+  // AI suggest callback per question
+  const handleSuggest = useCallback(
+    async (questionId: string): Promise<string> => {
+      const question = QUESTIONS.find((q) => q.id === questionId)
+      if (!question) return 'Pregunta no encontrada.'
+      // Build prior answers summary for context
+      const priorLines = Object.entries(assessment?.answers || {})
+        .map(([qId, a]) => {
+          const q = QUESTIONS.find((qq) => qq.id === qId)
+          if (!q) return ''
+          const val = a.scale ?? a.gate ?? a.validation ?? ''
+          return `${q.id}: ${val}`
+        })
+        .filter(Boolean)
+        .join('\n')
+      return suggestAnswer(question.text, '', priorLines, companyContext)
+    },
+    [assessment?.answers, companyContext],
+  )
+
   // Loading state
   if (loading) {
     return (
@@ -193,9 +234,9 @@ export default function AssessmentPage() {
             </div>
           </div>
         </header>
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
           <ResultPanel result={assessment.result} />
-          <div className="mt-6 text-center">
+          <div className="text-center">
             <Link
               to={`/assessment/${id}/export`}
               className="inline-block px-6 py-3 bg-brand-800 text-white rounded-lg text-sm font-medium hover:bg-brand-900 transition-colors"
@@ -203,6 +244,9 @@ export default function AssessmentPage() {
               Descargar PDF / Excel · Compartir resultados
             </Link>
           </div>
+
+          {/* Phase 7: Remediation Plan */}
+          <RemediationPlanView assessmentId={id} />
         </main>
       </div>
     )
@@ -278,6 +322,7 @@ export default function AssessmentPage() {
                 Descargar PDF / Excel · Compartir resultados
               </Link>
             </div>
+            <RemediationPlanView assessmentId={id} />
           </>
         ) : (
           <>
@@ -295,6 +340,8 @@ export default function AssessmentPage() {
               answers={assessment.answers}
               onAnswer={handleAnswer}
               onGateChange={handleGateChange}
+              onExplain={handleExplain}
+              onSuggest={handleSuggest}
             />
 
             {/* Footer navigation */}

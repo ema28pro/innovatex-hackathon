@@ -40,6 +40,12 @@ function toUpsertBody(entry: AnswerEntry): any {
   return base
 }
 
+export async function listAssessments(companyId?: string): Promise<Assessment[]> {
+  const params = companyId ? { company_id: companyId } : {}
+  const { data } = await apiClient.get('/assessments', { params })
+  return (data ?? []).map(toAssessment)
+}
+
 export async function startAssessment(companyId: string): Promise<Assessment> {
   const { data } = await apiClient.post('/assessments', { company_id: companyId })
   return toAssessment(data)

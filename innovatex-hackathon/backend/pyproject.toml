@@ -12,6 +12,7 @@ dependencies = [
     "pydantic-settings>=2.5.0",
     "pyjwt[crypto]>=2.9.0",
     "httpx>=0.28.0",
+    "anthropic>=0.70.0",
     "python-multipart>=0.0.12",
     "reportlab>=5.0",
     "openpyxl>=3.1",

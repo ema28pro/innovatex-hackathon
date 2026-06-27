@@ -1,5 +1,5 @@
 # Phase 2 (Path B): Supabase managed PostgreSQL — no local DB service needed.
-# Backend connects to Supabase PostgreSQL directly (DATABASE_URL) and via pooler (DATABASE_URL_POOLER).
+# Backend connects to Supabase PostgreSQL via pooler (DATABASE_URL / DATABASE_URL_POOLER).
 services:
   backend:
     build:
@@ -14,7 +14,12 @@ services:
     command: []  # overridden by entrypoint; kept for docker-compose compatibility
     volumes:
       - ./backend:/app
-      - /app/.venv
+      - /app/.venv  # anonymous volume — preserva el venv entre reinicios
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 # Frontend runs locally: cd frontend && npm install && npm run dev
 # Nginx not needed for local dev (no postgres service to proxy)
