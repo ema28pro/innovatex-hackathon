@@ -188,4 +188,4 @@ innovatex-hackathon/
 
 ## Licencia
 
-Proyecto desarrollado para el Innovatex Hackathon.
+Proyecto desarrollado para Hackathon.
